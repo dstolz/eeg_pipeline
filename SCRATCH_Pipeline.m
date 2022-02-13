@@ -19,15 +19,15 @@ outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
 
 %% 1. PREPROCESS
 
-% subjDirStartCode = 'P01*';
-subjDirStartCode = 'P01202*'; % TESTING
+subjDirStartCode = 'P01*';
+
 cndDirs = {'Cortical','Pre'};
+% cndDirs = {'Cortical','Post'};
 
 skipFileCode = 'Rest'; % exclude some sessions with this in its filename
 
-newFs = 32;
 
-skipCompleted = true;
+skipCompleted = false;
 
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
@@ -37,14 +37,14 @@ cfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';
 cfg_Preprocess.definetrial.trialdef.eventvalue = [3 4];
 
 cfg_Preprocess.resample = [];
-cfg_Preprocess.resample.resamplefs = newFs;
+cfg_Preprocess.resample.resamplefs = 512;
 
 
 cfg_Preprocess.preprocessing = [];
 cfg_Preprocess.preprocessing.reref = 'yes';
 cfg_Preprocess.preprocessing.refchannel = {'A1' 'A2'};
 cfg_Preprocess.preprocessing.detrend = 'yes';
-cfg_Preprocess.preprocessing.bpfreq = [1 8]; %[1 120];
+cfg_Preprocess.preprocessing.bpfreq = [2 35]; %[1 120];
 cfg_Preprocess.preprocessing.bpfilter = 'yes';
 
 [dataPaths,subjs] = get_data_paths(subjDir,subjDirStartCode,cndDirs,'bdf',skipFileCode);
@@ -178,7 +178,6 @@ fprintf('Completed processing %d files in %.1f minutes\n',length(d),toc(t)/60)
 
 pthIn = fullfile(outPathRoot,'MERGED_COMP');
 
-skipCompleted = true;
 
 
 
