@@ -13,7 +13,9 @@ narginchk(1,5);
 if nargin < 2 || isempty(subjDirStartCode), subjDirStartCode = '*'; end
 if nargin < 3 || isempty(cndDirs), cndDirs = '**\*'; end
 if nargin < 4 || isempty(ext), ext = 'bdf'; end
-if nargin < 5, skipFileCode = []; end
+if nargin < 5, skipFileCode = {}; end
+
+skipFileCode = cellstr(skipFileCode);
 
 cndDirs = cellstr(cndDirs);
     
@@ -26,8 +28,10 @@ for i = 1:length(dataDirs)
     d = dir(fullfile(dataDirs{i},[subjs(i).name '*.' ext]));
     
     if ~isempty(skipFileCode)
-        ind = contains({d.name},skipFileCode);
-        d(ind) = [];
+        for j = 1:length(skipFileCode)
+            ind = contains({d.name},skipFileCode{j});
+            d(ind) = [];
+        end
     end
     
     dataPaths.(subjs(i).name) = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);   
