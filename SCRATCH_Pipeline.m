@@ -21,13 +21,13 @@ outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
 
 subjDirStartCode = 'P01*';
 
-cndDirs = {'Cortical','Pre'};
-% cndDirs = {'Cortical','Post'};
+% cndDirs = {'Cortical','Pre'};
+cndDirs = {'Cortical','Post'};
 
-skipFileCode = 'Rest'; % exclude some sessions with this in its filename
+skipFileCode = {'Rest','rest'}; % exclude some sessions with this in its filename
 
 
-skipCompleted = false;
+skipCompleted = true;
 
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
