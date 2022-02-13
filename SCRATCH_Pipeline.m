@@ -1,6 +1,15 @@
 %%
-addpath('G:\My Drive\AUD\Classes\Independent Study\myCode')
+addpath('C:\Users\Daniel\src\eeg_pipeline')
 addpath('c:\Users\Daniel\src\fieldtrip\')
+
+
+%% EEG PIPELINE 
+% 1.  PREPROCESS
+% 2.  CONCATENATE DATA
+% 3A. DENOISING
+% 3B. SELECT NOISY COMPONENTS
+% 3C. REMOVE ARTIFACTUAL COMPONENTS
+% 4.  COMPUTE DSS COMPONENTS BEFORE RECONSTRUCTION
 
 
 %% 1. PREPROCESS
@@ -18,20 +27,20 @@ newFs = 512;
 
 skipCompleted = true;
 
-cfg.definetrial = [];
-cfg.definetrial.trialdef.eventtype  = 'STATUS';
-cfg.definetrial.trialdef.eventvalue = [3 4];
+cfg_Preprocess.definetrial = [];
+cfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';
+cfg_Preprocess.definetrial.trialdef.eventvalue = [3 4];
 
-cfg.resample = [];
-cfg.resample.resamplefs = newFs;
+cfg_Preprocess.resample = [];
+cfg_Preprocess.resample.resamplefs = newFs;
 
 
-cfg.preprocessing = [];
-cfg.preprocessing.reref = 'yes';
-cfg.preprocessing.refchannel = {'A1' 'A2'};
-cfg.preprocessing.detrend = 'yes';
-cfg.preprocessing.bpfreq = [1 120];
-cfg.preprocessing.bpfilter = 'yes';
+cfg_Preprocess.preprocessing = [];
+cfg_Preprocess.preprocessing.reref = 'yes';
+cfg_Preprocess.preprocessing.refchannel = {'A1' 'A2'};
+cfg_Preprocess.preprocessing.detrend = 'yes';
+cfg_Preprocess.preprocessing.bpfreq = [1 120];
+cfg_Preprocess.preprocessing.bpfilter = 'yes';
 
 [dataPaths,subjs] = get_data_paths(subjDir,subjDirStartCode,cndDirs,'bdf');
 fprintf('Data from %d subjects will be processed\n',length(subjs))
@@ -52,12 +61,12 @@ for s = 1:length(subjs)
             continue
         end
         
-        cfg.definetrial.headerfile = ffn{i};
-        cfg.definetrialOut = ft_definetrial(cfg.definetrial);
+        cfg_Preprocess.definetrial.headerfile = ffn{i};
+        cfg_Preprocess.definetrialOut = ft_definetrial(cfg_Preprocess.definetrial);
         
-        cfg.definetrialOut.trl = [cfg.definetrialOut.trl(:,1)', 0]; % reconjigure trial samples for onset/offset timing from separate events [3 4]
+        cfg_Preprocess.definetrialOut.trl = [cfg_Preprocess.definetrialOut.trl(:,1)', 0]; % reconjigure trial samples for onset/offset timing from separate events [3 4]
         
-        data = ft_preprocessing(cfg.definetrialOut);
+        data = ft_preprocessing(cfg_Preprocess.definetrialOut);
         
         oldFs = data.fsample;
         
@@ -198,7 +207,7 @@ for i = 1:length(d)
     pause(1)
 end
 
-%% 3C. Remove selected components
+%% 3C. REMOVE ARTIFACTUAL COMPONENTS
 pthInData = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED';
 pthInComp = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_COMP';
 pthOut    = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_CLEAN';
