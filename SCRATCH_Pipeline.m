@@ -127,7 +127,7 @@ for i = 1:length(toBeMerged)
     
     
     s = string(split(fn,delimiter));
-    s(1,orderTokenIdx) = join(s(:,orderTokenIdx)',"-");
+    s(1,orderTokenIdx) = join(s(:,orderTokenIdx)',"_");
     fnOut = join(s(1,:),delimiter);
     fnOut = fnOut + "_MERGED.mat";
     ffnOut = fullfile(pathOut,fnOut);
