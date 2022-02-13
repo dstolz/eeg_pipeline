@@ -12,20 +12,25 @@ addpath('c:\Users\Daniel\src\fieldtrip\')
 % 4.  COMPUTE DSS COMPONENTS BEFORE RECONSTRUCTION
 
 
+%%  Required variables
+
+subjDir = 'L:\Raw\P01\Aim 2\';
+outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
+
 %% 1. PREPROCESS
 
-subjDir = 'C:\Users\Daniel\Desktop\EEGTestData';
-% subjDir = 'L:\Raw\P01\Aim 2\';
-
-pathToPreprocessed = fullfile(subjDir,'FTDATA');
-
-
-subjDirStartCode = 'P01*';
+% subjDirStartCode = 'P01*';
+subjDirStartCode = 'P01202*'; % TESTING
 cndDirs = {'Cortical','Pre'};
 
-newFs = 512;
+skipFileCode = 'Rest'; % exclude some sessions with this in its filename
+
+newFs = 32;
 
 skipCompleted = true;
+
+
+pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
 
 cfg_Preprocess.definetrial = [];
 cfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';
@@ -39,16 +44,16 @@ cfg_Preprocess.preprocessing = [];
 cfg_Preprocess.preprocessing.reref = 'yes';
 cfg_Preprocess.preprocessing.refchannel = {'A1' 'A2'};
 cfg_Preprocess.preprocessing.detrend = 'yes';
-cfg_Preprocess.preprocessing.bpfreq = [1 120];
+cfg_Preprocess.preprocessing.bpfreq = [1 8]; %[1 120];
 cfg_Preprocess.preprocessing.bpfilter = 'yes';
 
-[dataPaths,subjs] = get_data_paths(subjDir,subjDirStartCode,cndDirs,'bdf');
+[dataPaths,subjs] = get_data_paths(subjDir,subjDirStartCode,cndDirs,'bdf',skipFileCode);
 fprintf('Data from %d subjects will be processed\n',length(subjs))
 
 st = tic;
 for s = 1:length(subjs)
     curSubj = char(subjs(s));
-    fprintf('\n%s\nProcessing Subject %d of %d:"%s"\n',repmat('~',1,50),s,length(subjs),curSubj)
+    fprintf('\n%s\nProcessing Subject %d of %d: "%s"\n',repmat('~',1,50),s,length(subjs),curSubj)
     ffn = dataPaths.(curSubj);
     
     for i = 1:length(ffn)
@@ -70,9 +75,9 @@ for s = 1:length(subjs)
         
         oldFs = data.fsample;
         
-        data = ft_resampledata(cfg.resample,data);
+        data = ft_resampledata(cfg_Preprocess.resample,data);
         
-        data = ft_preprocessing(cfg.preprocessing,data);
+        data = ft_preprocessing(cfg_Preprocess.preprocessing,data);
         
         if ~isfolder(fileparts(outFfn)), mkdir(fileparts(outFfn)); end
         
@@ -90,8 +95,7 @@ fprintf('Total preprocessing time = %.1f minutes\n',toc(st)/60)
 %  Note this will currently only work with single trial data
 %  Also, channels are assumed to be in the same order for all files
 
-pathToPreprocessed = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA';
-pathOut = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED';
+pathOut = fullfile(outPathRoot,'MERGED');
 
 orderTokenIdx = 5;
 delimiter = "_";
@@ -136,8 +140,8 @@ end
 %% 3A. DENOISING
 % Use PCA or ICA to find artifacts and then remove
 
-pthIn  = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED';
-pthOut = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_COMP';
+pthIn  = fullfile(outPathRoot,'MERGED');
+pthOut = fullfile(outPathRoot,'MERGED_COMP');
 
 chExclude = {'-Status','-*EOG','-EXG*','-A1','-A2'};
 
@@ -172,9 +176,11 @@ fprintf('Completed processing %d files in %.1f minutes\n',length(d),toc(t)/60)
 %% 3B. SELECT NOISY COMPONENTS
 % Visualize components for denoising
 
-pthIn = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_COMP';
+pthIn = fullfile(outPathRoot,'MERGED_COMP');
 
-d = dir(fullfile(pthIn,'*COMP.mat'));
+skipCompleted = true;
+
+
 
 cfg = [];
 cfg.layout = 'biosemi64.lay';
@@ -184,9 +190,19 @@ cfg.blocksize = 30;
 cfg.channel = 1:16;
 % cfg.preproc.hilbert = 'abs';
 
+
+
+d = dir(fullfile(pthIn,'*COMP.mat'));
+
+if skipCompleted
+    ind = arrayfun(@(a) exist(fullfile(a.folder,[a.name(1:end-4) '_ARTIFACTS.txt']),'file')==2,d);
+    fprintf(2,'Skipping %d existing artifact component files\n',sum(ind))
+    d(ind) = [];
+end
+
 c = repmat('*',1,50);
 for i = 1:length(d)
-    fprintf('\n%s\n\t%s\n%s\n',c,d(i).name,c)
+    fprintf('\n%s\n\t%d of %d: %s\n%s\n',c,i,length(d),d(i).name,c)
     
     [~,fnIn,~] = fileparts(d(i).name);
     
@@ -208,9 +224,9 @@ for i = 1:length(d)
 end
 
 %% 3C. REMOVE ARTIFACTUAL COMPONENTS
-pthInData = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED';
-pthInComp = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_COMP';
-pthOut    = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_CLEAN';
+pthInData = fullfile(outPathRoot,'MERGED');
+pthInComp = fullfile(outPathRoot,'MERGED_COMP');
+pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
 
 dd = dir(fullfile(pthInData,'*MERGED.mat'));
 dc = dir(fullfile(pthInComp,'*COMP.mat'));
@@ -222,15 +238,15 @@ for i = 1:length(dc)
     
     ffnCompArt = fullfile(da(i).folder,da(i).name);
     fid = fopen(ffnCompArt,'r');
-    c = textscan(fid,'%d', ...
-        'Delimiter',',', ...
-        'Headerlines',1, ...
-        'CollectOutput',true, ...
-        'EndOfLine','\r\n');
+    fgetl(fid); % discard header line
+    c = fgetl(fid);
     fclose(fid);
     
-    c = c{1}';
-    
+    if isequal(c,-1)
+        fprintf('No components marked as artifact for "%s"\n',dc(i).name)
+        continue
+    end
+    c = str2num(c); %#ok<ST2NM>
     
     load(fullfile(dd(i).folder,dd(i).name),'data');
     load(fullfile(dc(i).folder,dc(i).name),'comp');
@@ -255,8 +271,8 @@ ft_databrowser(cfg,data);
 %% 4. COMPUTE DSS COMPONENTS BEFORE RECONSTRUCTION
 % Use PCA or ICA to find artifacts and then remove
 
-pthIn  = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_CLEAN';
-pthOut = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_DSS';
+pthIn  = fullfile(outPathRoot,'MERGED_CLEAN');
+pthOut = fullfile(outPathRoot,'MERGED_DSS');
 
 chExclude = {'-Status','-*EOG','-EXG*','-A1','-A2'};
 

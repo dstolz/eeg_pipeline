@@ -1,8 +1,12 @@
-%%
+%% TRF analysis - BONES
+
 nComponents = 6;
 
 pthWav = 'C:\Users\Daniel\Desktop\EEGTestData\Stimuli';
-pthDSS = 'C:\Users\Daniel\Desktop\EEGTestData\FTDATA_MERGED_DSS';
+
+
+outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
+pthDSS = fullfile(outPathRoot,'MERGED_DSS');
 
 fnWav = 'M_Background_NoTC40_6_7_Pool_C.wav';
 
