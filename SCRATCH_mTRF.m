@@ -1,3 +1,6 @@
+%%
+addpath(genpath('C:\Users\Daniel\src\mTRF-Toolbox'));
+
 %% TRF analysis - BONES
 
 nComponents = 6;
@@ -9,7 +12,9 @@ pthStimulusDir = 'C:\Users\dstolz\Desktop\Stimuli Concatenated (10 minutes)\Save
 
 ForegroundOrBackground = 'Foreground';
 
-
+modelDirection = 1; % 1: forward model; -1: backwards model
+modelWindow = [-100 400]; % ms
+modelLambda = 0.1; % regularization parameter
 
 d = dir(fullfile(pthStimulusDir,'**\*.wav'));
 fnWav = {d.name}';
@@ -51,10 +56,36 @@ for i = 1:length(cDSS)
     
     fprintf('Matched: "%s" with "%s"\n',fnDSS{i},fnWav{ind})
     
+    fprintf('Loading "%s" ...',fnDSS{i})
     load(fnDSS{i});
+    fprintf(' done\n')
 
+    fprintf('Loading "%s" ...',fnWav{ind})
     [stim,wavFs] = audioread(ffnWav{ind});
+    fprintf(' done\n')
+    
+    
+    fprintf('Resampling stimulus %.1f Hz -> %.1f Hs ...',wavFs,Fs)
+%     [q,p] = rat(wavFs/Fs);
+%     stim = resample(stim,p,q);
+    stim = mTRFenvelope(stim,wavFs,Fs);
+    fprintf(' done\n')
+    
+    % truncate extra samples if the stimulus length doesn't match EEG trial
+    adj = length(stim) - length(resp);
+    if adj ~= 0
+        fprintf(2,'WARNING: Stimulus ended up being %d samples longer than the trial. Truncating stimulus.\n',adj)
+        stim(end-adj+1:end) = [];
+    end
 
+    fprintf('Computing hilbert transform of stimulus ...')
+    stim = hilbert(stim);
+    stim = abs(stim);
+    fprintf(' done\n')
+    
+    model = mTRFtrain(stim,resp.*factor,Fs,modelDirection,modelWindow(1),modelWindow(2),modelLambda,'split',40);
+
+    
 end
 
 %%
