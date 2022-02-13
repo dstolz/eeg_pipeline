@@ -1,17 +1,63 @@
 %% TRF analysis - BONES
 
 nComponents = 6;
-
-pthWav = 'C:\Users\Daniel\Desktop\EEGTestData\Stimuli';
-
-
 outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
+
+
+pthStimulusDir = 'C:\Users\dstolz\Desktop\Stimuli Concatenated (10 minutes)\Saved Concatenated Files';
+
+
+ForegroundOrBackground = 'Foreground';
+
+
+
+d = dir(fullfile(pthStimulusDir,'**\*.wav'));
+fnWav = {d.name}';
+ffnWav = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
+
+
 pthDSS = fullfile(outPathRoot,'MERGED_DSS');
 
-fnWav = 'M_Background_NoTC40_6_7_Pool_C.wav';
+d = dir(fullfile(pthDSS,'*DSS.mat'));
+fnDSS = {d.name}';
 
-ffnWav = fullfile(pthWav,fnWav);
-[stim,wavFs] = audioread(ffnWav);
+% parse DSS filenames
+cDSS = cellfun(@(a) textscan(a(1:end-4),'%s','delimiter','_'),fnDSS);
+tokDSS.Char = 3;
+tokDSS.TC   = 4;
+tokDSS.F1   = 5;
+tokDSS.F2   = 6;
+tokDSS.Pool = 7; % Pool character is suffix to "Pool"
+
+% match data filenames with corresponding wav filenames
+for i = 1:length(cDSS)
+    x = cDSS{i};
+    ind = contains(fnWav,x{tokDSS.Char}) ...
+        & contains(fnWav,x{tokDSS.TC}) ...
+        & contains(fnWav,[x{tokDSS.F1} '_' x{tokDSS.F2}]) ...
+        & contains(fnWav,['Pool_' x{tokDSS.Pool}(end)]) ...
+        & contains(fnWav,ForegroundOrBackground);
+    n = sum(ind);
+    
+    if n == 0
+        fprintf(2,'No matching Wav files found! skipping\n')
+        continue
+    end
+        
+    if n > 1
+        fprint(2,'%d matching Wav files found! Figure out what''s wrong and run again\n',n)
+        continue
+    end
+    
+    fprintf('Matched: "%s" with "%s"\n',fnDSS{i},fnWav{ind})
+    
+    load(fnDSS{i});
+
+    [stim,wavFs] = audioread(ffnWav{ind});
+
+end
+
+%%
 
 load(fullfile(pthDSS,'P012712_Pre_M_noTC_6-7_PoolC_MERGED_CLEAN_DSS.mat'),'comp');
 Fs = comp.fsample;
