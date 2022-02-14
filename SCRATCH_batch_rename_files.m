@@ -1,6 +1,6 @@
 %% Batch rename
 
-outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
+outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 
 d = dir(fullfile(outPathRoot,'**\*MERGED*.mat'));
 

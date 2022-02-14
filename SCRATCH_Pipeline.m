@@ -15,7 +15,8 @@ addpath('c:\Users\Daniel\src\fieldtrip\')
 %%  Required variables
 
 subjDir = 'L:\Raw\P01\Aim 2\';
-outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
+outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
+skipCompleted = true;
 
 %% 1. PREPROCESS
 
@@ -27,7 +28,7 @@ cndDirs = {'Cortical','Post'};
 skipFileCode = {'Rest','rest'}; % exclude some sessions with this in its filename
 
 
-skipCompleted = true;
+
 
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
@@ -132,6 +133,11 @@ for i = 1:length(toBeMerged)
     fnOut = fnOut + "_MERGED.mat";
     ffnOut = fullfile(pathOut,fnOut);
     
+    if skipCompleted && exist(ffnOut,'file')
+        fprintf(2,'\tFile already exists, skippping: %s\n',fnOut)
+        continue
+    end
+    
     fprintf('\tSaving "%s" ...',fnOut)
     save(ffnOut,'data');
     fprintf(' done\n')
@@ -146,12 +152,12 @@ pthOut = fullfile(outPathRoot,'MERGED_COMP');
 chExclude = {'-Status','-*EOG','-EXG*','-A1','-A2'};
 
 cfg = [];
-cfg.method = 'varimax';
+% cfg.method = 'varimax';
 % cfg.method = 'pca';
 % cfg.method = 'dss';
-% cfg.method = 'fastica';
-% cfg.fastica.numOfIC = 'all';
-% cfg.fastica.maxNumIterations = 100;
+cfg.method = 'fastica';
+cfg.fastica.numOfIC = 'all';
+cfg.fastica.maxNumIterations = 100;
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
@@ -167,6 +173,12 @@ for i = 1:length(d)
     [~,fnOut,~] = fileparts(ffnIn);
     ffnOut = fullfile(pthOut,[fnOut '_COMP.mat']);
 
+    
+    if skipCompleted && exist(ffnOut,'file')
+        fprintf(2,'\tFile already exists, skippping: %s\n',fnOut)
+        continue
+    end
+    
     cfg.inputfile  = ffnIn;
     cfg.outputfile = ffnOut;
     ft_componentanalysis(cfg);

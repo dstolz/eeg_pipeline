@@ -4,7 +4,7 @@ addpath(genpath('C:\Users\dstolz\Documents\src\mTRF-Toolbox'));
 %% TRF analysis - BONES
 
 
-outPathRoot = 'C:\Users\dstolz\Desktop\EEGTestData';
+outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 pthStimulusDir = 'C:\Users\dstolz\Desktop\Stimuli Concatenated (10 minutes)\Saved Concatenated Files';
 
 
