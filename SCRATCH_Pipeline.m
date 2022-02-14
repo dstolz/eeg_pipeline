@@ -149,7 +149,8 @@ for i = 1:length(toBeMerged)
 end
 
 %% 3A. DENOISING
-% Use PCA or ICA to find artifacts and then remove
+% Use ICA to find artifacts and then remove in 3B
+% Jung, et al, 2000, Psychophysiology, https://doi.org/10.1111/1469-8986.3720163
 
 pthIn  = fullfile(outPathRoot,'MERGED');
 pthOut = fullfile(outPathRoot,'MERGED_COMP');
@@ -157,9 +158,6 @@ pthOut = fullfile(outPathRoot,'MERGED_COMP');
 chExclude = {'-Status','-EXG*'}; % include EOG channels
 
 cfg = [];
-% cfg.method = 'varimax';
-% cfg.method = 'pca';
-% cfg.method = 'dss';
 cfg.method = 'fastica';
 cfg.fastica.numOfIC = 'all';
 cfg.fastica.maxNumIterations = 500;
@@ -191,11 +189,9 @@ end
 fprintf('Completed processing %d files in %.1f minutes\n',length(d),toc(t)/60)
 
 %% 3B. SELECT NOISY COMPONENTS
-% Visualize components for denoising
+% Visualize and select artifactual components for removal. Reconstruction in 3C.
 
 pthIn = fullfile(outPathRoot,'MERGED_COMP');
-
-
 
 
 cfg = [];
@@ -240,6 +236,7 @@ for i = 1:length(d)
 end
 
 %% 3C. REMOVE ARTIFACTUAL COMPONENTS
+
 pthInData = fullfile(outPathRoot,'MERGED');
 pthInComp = fullfile(outPathRoot,'MERGED_COMP');
 pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
