@@ -1,6 +1,6 @@
 %%
-addpath('C:\Users\Daniel\src\eeg_pipeline')
-addpath('c:\Users\Daniel\src\fieldtrip\')
+addpath('C:\Users\dstolz\Documents\src\eeg_pipeline')
+addpath('C:\Users\dstolz\Documents\src\fieldtrip\')
 
 
 %% EEG PIPELINE 
@@ -160,7 +160,7 @@ chExclude = {'-Status','-EXG*'}; % include EOG channels
 cfg = [];
 cfg.method = 'fastica';
 cfg.fastica.numOfIC = 'all';
-cfg.fastica.maxNumIterations = 500;
+cfg.fastica.maxNumIterations = 250;
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
@@ -197,7 +197,8 @@ pthIn = fullfile(outPathRoot,'MERGED_COMP');
 cfg = [];
 cfg.layout = 'biosemi64.lay';
 % cfg.ylim = [-75 75];
-cfg.viewmode = 'component';
+% cfg.viewmode = 'component';
+cfg.comment = 'no';
 cfg.blocksize = 30;
 cfg.channel = 1:16;
 % cfg.preproc.hilbert = 'abs';
