@@ -109,6 +109,11 @@ fprintf('Will merge %d groups of files\n',length(toBeMerged))
 for i = 1:length(toBeMerged)
     fprintf('\nMerging %d of %d groups\n',i,length(toBeMerged))
     
+    if numel(toBeMerged{i}) < 2
+        fprintf(2,'\tMulitple files not found. No merging performed for this file!\n')
+        continue
+    end
+    
     data = [];
     fn = cell(size(toBeMerged{i}));
     for j = 1:length(toBeMerged{i})
