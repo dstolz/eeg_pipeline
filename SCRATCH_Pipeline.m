@@ -139,7 +139,7 @@ for i = 1:length(toBeMerged)
     ffnOut = fullfile(pathOut,fnOut);
     
     if skipCompleted && exist(ffnOut,'file')
-        fprintf(2,'\tFile already exists, skippping: %s\n',fnOut)
+        fprintf('\tMerged file already exists, skippping: %s\n',fnOut)
         continue
     end
     
@@ -154,7 +154,7 @@ end
 pthIn  = fullfile(outPathRoot,'MERGED');
 pthOut = fullfile(outPathRoot,'MERGED_COMP');
 
-chExclude = {'-Status','-*EOG','-EXG*','-A1','-A2'};
+chExclude = {'-Status','-EXG*'}; % include EOG channels
 
 cfg = [];
 % cfg.method = 'varimax';
@@ -162,7 +162,7 @@ cfg = [];
 % cfg.method = 'dss';
 cfg.method = 'fastica';
 cfg.fastica.numOfIC = 'all';
-cfg.fastica.maxNumIterations = 100;
+cfg.fastica.maxNumIterations = 500;
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
