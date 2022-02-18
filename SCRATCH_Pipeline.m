@@ -1,7 +1,7 @@
 %%
 addpath('C:\Users\dstolz\Documents\src\eeg_pipeline')
 addpath('C:\Users\dstolz\Documents\src\fieldtrip\')
-
+ft_defaults
 
 %% EEG PIPELINE 
 % 1.  PREPROCESS
@@ -100,6 +100,9 @@ pathOut = fullfile(outPathRoot,'MERGED');
 
 orderTokenIdx = 5;
 delimiter = "_";
+
+pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
+
 toBeMerged = merge_data_files(pathToPreprocessed,'mat',orderTokenIdx,[],delimiter);
 
 
@@ -158,9 +161,10 @@ pthOut = fullfile(outPathRoot,'MERGED_COMP');
 chExclude = {'-Status','-EXG*'}; % include EOG channels
 
 cfg = [];
-cfg.method = 'fastica';
-cfg.fastica.numOfIC = 'all';
-cfg.fastica.maxNumIterations = 250;
+cfg.method = 'pca';
+% cfg.method = 'fastica';
+% cfg.fastica.numOfIC = 'all';
+% cfg.fastica.maxNumIterations = 250;
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
@@ -196,12 +200,13 @@ pthIn = fullfile(outPathRoot,'MERGED_COMP');
 
 cfg = [];
 cfg.layout = 'biosemi64.lay';
-% cfg.ylim = [-75 75];
-% cfg.viewmode = 'component';
+% cfg.ylim = [-1 1]*5000;
+cfg.viewmode = 'component';
 cfg.comment = 'no';
 cfg.blocksize = 30;
 cfg.channel = 1:16;
 % cfg.preproc.hilbert = 'abs';
+
 
 
 
