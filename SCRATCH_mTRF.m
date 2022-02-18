@@ -20,27 +20,27 @@ fnWav = {d.name}';
 ffnWav = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
 
-pthDSS = fullfile(outPathRoot,'MERGED_DSS');
+pthIn = fullfile(outPathRoot,'MERGED_CLEAN');
 
-d = dir(fullfile(pthDSS,'*DSS.mat'));
-fnDSS = {d.name}';
-ffnDSS = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
+d = dir(fullfile(pthIn,'*CLEAN.mat'));
+fnEEG = {d.name}';
+ffnEEG = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
-% parse DSS filenames
-cDSS = cellfun(@(a) textscan(a(1:end-4),'%s','delimiter','_'),fnDSS);
-tokDSS.Char = 3;
-tokDSS.TC   = 4;
-tokDSS.F1   = 5;
-tokDSS.F2   = 6;
-tokDSS.Pool = 7; % Pool character is suffix to "Pool"
+% parse data filenames
+cEEG = cellfun(@(a) textscan(a(1:end-4),'%s','delimiter','_'),fnEEG);
+tokEEG.Char = 3;
+tokEEG.TC   = 4;
+tokEEG.F1   = 5;
+tokEEG.F2   = 6;
+tokEEG.Pool = 7; % Pool character is suffix to "Pool"
 
 % match data filenames with corresponding wav filenames
-for i = 1:length(cDSS)
-    x = cDSS{i};
-    ind = contains(fnWav,x{tokDSS.Char}) ...
-        & contains(fnWav,x{tokDSS.TC},'IgnoreCase',true) ...
-        & contains(fnWav,[x{tokDSS.F1} '_' x{tokDSS.F2}]) ...
-        & contains(fnWav,['Pool_' x{tokDSS.Pool}(end)]) ...
+for i = 1:length(cEEG)
+    x = cEEG{i};
+    ind = contains(fnWav,x{tokEEG.Char}) ...
+        & contains(fnWav,x{tokEEG.TC},'IgnoreCase',true) ...
+        & contains(fnWav,[x{tokEEG.F1} '_' x{tokEEG.F2}]) ...
+        & contains(fnWav,['Pool_' x{tokEEG.Pool}(end)]) ...
         & contains(fnWav,ForegroundOrBackground);
     n = sum(ind);
     
@@ -54,12 +54,12 @@ for i = 1:length(cDSS)
         continue
     end
     
-    fprintf('Matched: "%s" with "%s"\n',fnDSS{i},fnWav{ind})
+    fprintf('Matched: "%s" with "%s"\n',fnEEG{i},fnWav{ind})
     
-    fprintf('Loading "%s" ...',fnDSS{i})
-    load(ffnDSS{i});
-    resp = comp.trial{1}';
-    Fs = comp.fsample;
+    fprintf('Loading "%s" ...',fnEEG{i})
+    load(ffnEEG{i});
+    resp = data.trial{1}';
+    Fs = data.fsample;
     fprintf(' done\n')
 
     fprintf('Loading "%s" ...',fnWav{ind})
@@ -86,7 +86,7 @@ for i = 1:length(cDSS)
     grid on
     
     
-    sgtitle(fnDSS{i},'interpreter','none');
+    sgtitle(fnEEG{i},'interpreter','none');
     drawnow
     
 end

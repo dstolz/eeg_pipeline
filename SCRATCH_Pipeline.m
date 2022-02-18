@@ -3,7 +3,7 @@ addpath('C:\Users\dstolz\Documents\src\eeg_pipeline')
 addpath('C:\Users\dstolz\Documents\src\fieldtrip\')
 ft_defaults
 
-%% EEG PIPELINE 
+%% EEG PIPELINE
 % 1.  PREPROCESS
 % 2.  CONCATENATE DATA
 % 3A. DENOISING
@@ -38,7 +38,7 @@ cfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';
 cfg_Preprocess.definetrial.trialdef.eventvalue = [3 4];
 
 cfg_Preprocess.resample = [];
-cfg_Preprocess.resample.resamplefs = 512;
+cfg_Preprocess.resample.resamplefs = 256;
 
 
 cfg_Preprocess.preprocessing = [];
@@ -59,32 +59,37 @@ for s = 1:length(subjs)
     
     for i = 1:length(ffn)
         
-        [~,inFn,~] = fileparts(ffn{i});
-        outFfn = fullfile(pathToPreprocessed,[inFn '.mat']);
-        
-        if skipCompleted && exist(outFfn,'file')
-            fprintf(2,'File exists, skipping ... "%s"\n',outFfn)
-            continue
+        try
+            [~,inFn,~] = fileparts(ffn{i});
+            outFfn = fullfile(pathToPreprocessed,[inFn '.mat']);
+            
+            if skipCompleted && exist(outFfn,'file')
+                fprintf(2,'File exists, skipping ... "%s"\n',outFfn)
+                continue
+            end
+            
+            cfg_Preprocess.definetrial.headerfile = ffn{i};
+            cfg_Preprocess.definetrialOut = ft_definetrial(cfg_Preprocess.definetrial);
+            
+            cfg_Preprocess.definetrialOut.trl = [cfg_Preprocess.definetrialOut.trl(:,1)', 0]; % reconjigure trial samples for onset/offset timing from separate events [3 4]
+            
+            data = ft_preprocessing(cfg_Preprocess.definetrialOut);
+            
+            oldFs = data.fsample;
+            
+            data = ft_resampledata(cfg_Preprocess.resample,data);
+            
+            data = ft_preprocessing(cfg_Preprocess.preprocessing,data);
+            
+            if ~isfolder(fileparts(outFfn)), mkdir(fileparts(outFfn)); end
+            
+            fprintf('Saving "%s" ...',outFfn)
+            save(outFfn,'data');
+            fprintf(' done\n')
+            
+        catch me
+            fprintf(2,'ERROR!\n')
         end
-        
-        cfg_Preprocess.definetrial.headerfile = ffn{i};
-        cfg_Preprocess.definetrialOut = ft_definetrial(cfg_Preprocess.definetrial);
-        
-        cfg_Preprocess.definetrialOut.trl = [cfg_Preprocess.definetrialOut.trl(:,1)', 0]; % reconjigure trial samples for onset/offset timing from separate events [3 4]
-        
-        data = ft_preprocessing(cfg_Preprocess.definetrialOut);
-        
-        oldFs = data.fsample;
-        
-        data = ft_resampledata(cfg_Preprocess.resample,data);
-        
-        data = ft_preprocessing(cfg_Preprocess.preprocessing,data);
-        
-        if ~isfolder(fileparts(outFfn)), mkdir(fileparts(outFfn)); end
-        
-        fprintf('Saving "%s" ...',outFfn)
-        save(outFfn,'data');
-        fprintf(' done\n')
     end
 end
 fprintf('Total preprocessing time = %.1f minutes\n',toc(st)/60)
@@ -162,6 +167,8 @@ chExclude = {'-Status','-EXG*'}; % include EOG channels
 
 cfg = [];
 cfg.method = 'pca';
+
+
 % cfg.method = 'fastica';
 % cfg.fastica.numOfIC = 'all';
 % cfg.fastica.maxNumIterations = 250;
@@ -170,8 +177,15 @@ d = dir(fullfile(pthIn,'*MERGED.mat'));
 
 if ~isfolder(pthOut), mkdir(pthOut); end
 t = tic;
+
+
+c = repmat('*',1,50);
 for i = 1:length(d)
+    fprintf('\n%s\n\t%d of %d: %s\n%s\n',c,i,length(d),d(i).name,c)
+    
     ffnIn = fullfile(d(i).folder,d(i).name);
+    
+    
     if i == 1
         load(ffnIn,'data');
         cfg.channel = ft_channelselection({'all',chExclude{:}},data.label); %#ok<CCAT>
@@ -179,7 +193,7 @@ for i = 1:length(d)
     
     [~,fnOut,~] = fileparts(ffnIn);
     ffnOut = fullfile(pthOut,[fnOut '_COMP.mat']);
-
+    
     
     if skipCompleted && exist(ffnOut,'file')
         fprintf(2,'\tFile already exists, skippping: %s\n',fnOut)
@@ -200,7 +214,7 @@ pthIn = fullfile(outPathRoot,'MERGED_COMP');
 
 cfg = [];
 cfg.layout = 'biosemi64.lay';
-% cfg.ylim = [-1 1]*5000;
+cfg.ylim = [-1 1]*150;
 cfg.viewmode = 'component';
 cfg.comment = 'no';
 cfg.blocksize = 30;
@@ -236,7 +250,7 @@ for i = 1:length(d)
     
     load(fullfile(d(i).folder,d(i).name));
     ft_databrowser(cfg,comp);
-    set(gcf,'name',d(i).name)
+    set(gcf,'name',d(i).name,'WindowState','maximized')
     waitfor(gcf)
     pause(1)
 end
@@ -247,13 +261,13 @@ pthInData = fullfile(outPathRoot,'MERGED');
 pthInComp = fullfile(outPathRoot,'MERGED_COMP');
 pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
 
-dd = dir(fullfile(pthInData,'*MERGED.mat'));
-dc = dir(fullfile(pthInComp,'*COMP.mat'));
+delComps = 1;
+
 da = dir(fullfile(pthInComp,'*ARTIFACTS.txt'));
 
 if ~isfolder(pthOut), mkdir(pthOut); end
 
-for i = 1:length(dc)
+for i = 1:length(da)
     
     ffnCompArt = fullfile(da(i).folder,da(i).name);
     fid = fopen(ffnCompArt,'r');
@@ -262,23 +276,56 @@ for i = 1:length(dc)
     fclose(fid);
     
     if isequal(c,-1)
-        fprintf('No components marked as artifact for "%s"\n',dc(i).name)
+        fprintf('No components marked as artifact for "%s"\n',da(i).name)
         continue
     end
     c = str2num(c); %#ok<ST2NM>
     
-    load(fullfile(dd(i).folder,dd(i).name),'data');
-    load(fullfile(dc(i).folder,dc(i).name),'comp');
+    t = textscan(da(i).name,'%s','delimiter','_');
     
-    [~,fn,~] = fileparts(dd(i).name);
-    fnOut = [fn '_CLEAN.mat'];
+    fnComp = join(string(t{1}(1:end-1)),'_');
+    fnData = join(string(t{1}(1:end-2)),'_');
+    
+    load(fullfile(fileparts(da(i).folder),"MERGED",fnData+".mat"),'data');
+    load(fullfile(da(i).folder,fnComp+".mat"),'comp');
+    
+    fn = join(string(t{1}(1:end-3)),'_');
+    fnOut = fn + "_CLEAN.mat";
     
     cfg = [];
-    cfg.outputfile = fullfile(pthOut,fnOut);
+    cfg.outputfile = char(fullfile(pthOut,fnOut));
     cfg.component = c;
     data_clean = ft_rejectcomponent(cfg,comp,data);
 end
 
+%% 3C. REMOVE ARTIFACTUAL COMPONENTS
+
+pthInData = fullfile(outPathRoot,'MERGED');
+pthInComp = fullfile(outPathRoot,'MERGED_COMP');
+pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
+
+delComps = 1:2;
+
+da = dir(fullfile(pthInComp,'*COMP.mat'));
+
+if ~isfolder(pthOut), mkdir(pthOut); end
+
+for i = 1:length(da)
+    t = textscan(da(i).name,'%s','delimiter','_');
+    
+    fnData = join(string(t{1}(1:end-2)),'_')+"_MERGED";
+    
+    load(fullfile(fileparts(da(i).folder),"MERGED",fnData+".mat"),'data');
+    load(fullfile(da(i).folder,da(i).name),'comp');
+    
+    fn = join(string(t{1}(1:end-3)),'_');
+    fnOut = fn + "_CLEAN.mat";
+    
+    cfg = [];
+    cfg.outputfile = char(fullfile(pthOut,fnOut));
+    cfg.component = delComps;
+    data_clean = ft_rejectcomponent(cfg,comp,data);
+end
 %% Visualize cleaned data
 cfg = [];
 cfg.layout = 'biosemi64.lay';
@@ -302,7 +349,10 @@ d = dir(fullfile(pthIn,'*CLEAN.mat'));
 
 if ~isfolder(pthOut), mkdir(pthOut); end
 t = tic;
+
+c = repmat('*',1,50);
 for i = 1:length(d)
+    fprintf('\n%s\n\t%d of %d: %s\n%s\n',c,i,length(d),d(i).name,c)
     ffnIn = fullfile(d(i).folder,d(i).name);
     if i == 1
         load(ffnIn,'data');
@@ -311,7 +361,7 @@ for i = 1:length(d)
     
     [~,fnOut,~] = fileparts(ffnIn);
     ffnOut = fullfile(pthOut,[fnOut '_DSS.mat']);
-
+    
     cfg.inputfile  = ffnIn;
     cfg.outputfile = ffnOut;
     ft_componentanalysis(cfg);
