@@ -45,7 +45,18 @@ for i = 1:size(m,1)
     str = join(m(i,:),delimiter);
     r = regexp(fn,str);
     ind = ~cellfun(@isempty,r);
-    mergeFiles{i} = ffn(ind);
+    mffn = ffn(ind);
+    c = cellfun(@(a) textscan(a,'%s','delimiter','_'),mffn,'uni',0);
+    id = cellfun(@(a) str2double(a{1}{orderTokenIdx}),c);
+    [~,idx] = sort(id);
+    mergeFiles{i} = mffn(idx);
 end
 mergeFiles(cellfun(@isempty,mergeFiles)) = [];
-mergeFiles = cellfun(@sort,mergeFiles,'uni',0);
+% mergeFiles = cellfun(@sort,mergeFiles,'uni',0);
+
+
+
+
+
+
+
