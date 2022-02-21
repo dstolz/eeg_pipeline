@@ -1,20 +1,25 @@
 %%
 addpath(genpath('C:\Users\dstolz\Documents\src\mTRF-Toolbox'));
 
+%% REQUIRED
+outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
+
+
+
 %% TRF analysis - BONES
 
 
-outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 pthStimulusDir = 'C:\Users\dstolz\Desktop\Stimuli Concatenated (10 minutes)\Saved Concatenated Files';
 
 
-ForegroundOrBackground = 'Foreground';
+ForegroundOrBackground = "Foreground";
 
 modelDirection = -1; % 1: forward model; -1: backwards model
 modelWindow = [-100 400]; % ms
+modelSplits = 80;
+
 modelLambda = 0.1; % regularization parameter
 modelFactor = 1;%0.0313;
-modelSplits = 80;
 
 d = dir(fullfile(pthStimulusDir,'**\*.wav'));
 fnWav = {d.name}';
@@ -33,6 +38,7 @@ ffnEEG = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
 % parse data filenames
 cEEG = cellfun(@(a) textscan(a(1:end-4),'%s','delimiter','_'),fnEEG);
+cEEG = cellfun(@string,cEEG,'uni',0);
 tokEEG.Char = 3;
 tokEEG.TC   = 4;
 tokEEG.F1   = 5;
@@ -43,31 +49,36 @@ model = cell(size(cEEG));
 % match data filenames with corresponding wav filenames
 for i = 1:length(cEEG)
     try
+        % first match slightly differently named EEG and WAV files
         x = cEEG{i};
-        %     ind = contains(fnWav,x{tokEEG.Char}) ...
-        %         & contains(fnWav,x{tokEEG.TC},'IgnoreCase',true) ...
-        %         & contains(fnWav,[x{tokEEG.F1} '_' x{tokEEG.F2}]) ...
-        %         & contains(fnWav,['Pool_' x{tokEEG.Pool}(end)]) ...
-        %         & contains(fnWav,ForegroundOrBackground);
-        wfn = join({x{tokEEG.Char},ForegroundOrBackground,x{tokEEG.TC}, ...
-            x{tokEEG.F1},x{tokEEG.F2},'Pool',x{tokEEG.Pool}(end)},'_');
-        wfn = char(wfn);
-        ind = startsWith(fnWav,wfn);
+        if startsWith(x(tokEEG.TC),"TC",'IgnoreCase',true)
+            tc = "TC";
+        elseif startsWith(x(tokEEG.TC),"No",'IgnoreCase',true)
+            tc = "NoTC";
+        else
+            tc = "";
+        end
+        wfn = x(tokEEG.Char) + "_" + ForegroundOrBackground + "_" + tc ...
+            + digitsPattern(2) + "_" + x(tokEEG.F1) + "_" + x(tokEEG.F2) ...
+            + "_Pool_" + x{tokEEG.Pool}(end);
+        ind = startsWith(fnWav,wfn,'IgnoreCase',true);
         
-        n = sum(ind);
-        if n == 0
-            fprintf(2,'No matching Wav files found! skipping\n')
+        model{i}.fnWAVpattern = wfn;
+        
+        if ~any(ind)
+            model{i}.fnEEG = fnEEG{i};
+            model{i}.fnWAV = '';
+            fprintf(2,'No matching Wav files found! Figure out what''s wrong and run again\n')
             continue
         end
         
-        if n > 1
-            fprint(2,'%d matching Wav files found! Figure out what''s wrong and run again\n',n)
-            continue
-        end
         
-        fprintf('Matched: "%s" with "%s"\n',fnEEG{i},fnWav{ind})
+        fnEEGcur = fnEEG{i};
+        fnWAVcur = fnWav{ind};
         
-        fprintf('Loading "%s" ...',fnEEG{i})
+        fprintf('Matched: "%s" with "%s"\n',fnEEGcur,fnWav{ind})
+        
+        fprintf('Loading "%s" ...',fnEEGcur)
         load(ffnEEG{i});
         if exist('data','var')
             resp = data.trial{1}';
@@ -78,7 +89,7 @@ for i = 1:length(cEEG)
         end
         fprintf(' done\n')
         
-        fprintf('Loading "%s" ...',fnWav{ind})
+        fprintf('Loading "%s" ...',fnWAVcur)
         [stim,wavFs] = audioread(ffnWav{ind});
         fprintf(' done\n')
         
@@ -94,8 +105,7 @@ for i = 1:length(cEEG)
         end
         
         model{i} = mTRFtrain(stim,resp.*modelFactor,Fs,modelDirection,modelWindow(1),modelWindow(2),modelLambda,'split',modelSplits);
-        model{i}.fnEEG = fnEEG{i};
-        model{i}.fnWAV = fnWav;
+
         
 %         w = mean(model{i}.w,[1 3]);
 %         plot(model{i}.t,w,'linewidth',2)
@@ -104,12 +114,20 @@ for i = 1:length(cEEG)
 %         
 %         %     stackedplot(model{i}.t,squeeze(model{i}.w(:,:,1:3)))
 %         
-%         sgtitle(fnEEG{i},'interpreter','none');
+%         sgtitle(thisFnEEG,'interpreter','none');
 %         drawnow
     catch me
-        fprintf(2,'ERROR! SKIPPED!\n')
+        fprintf(2,'ERROR! SKIPPED!\n\t%s;\tLine %d\n\t%s\n',me.identifier,me.stack(1).line,me.message)
         model{i}.ERROR = me;
     end
+    
+    model{i}.fnEEG = fnEEGcur;
+    model{i}.fnWAV = fnWav;
+end
+
+e = cellfun(@(a) isfield(a,'ERROR'),model);
+if any(e)
+    fprintf('Finished with %d Errors!\n',sum(e))
 end
 
 fn = sprintf('mTRF_model_%d.mat',modelDirection);
@@ -117,6 +135,20 @@ ffn = fullfile(outPathRoot,fn);
 fprintf('Saving "%s" ...',ffn)
 save(ffn,'model');
 fprintf(' done\n')
+
+
+%%
+
+modelDirection = -1; % 1: forward model; -1: backwards model
+
+fn = sprintf('mTRF_model_%d.mat',modelDirection);
+ffn = fullfile(outPathRoot,fn);
+
+load(ffn,'model');
+
+
+
+
 
 %% log off windows after finished
 
