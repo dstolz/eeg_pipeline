@@ -3,7 +3,7 @@ addpath('C:\Users\dstolz\Documents\src\eeg_pipeline')
 addpath('C:\Users\dstolz\Documents\src\fieldtrip\')
 ft_defaults
 
-%% EEG PIPELINE
+%% EEG PREPROCESSING PIPELINE
 % 1.  PREPROCESS
 % 2.  CONCATENATE DATA
 % 3A. DENOISING
@@ -304,21 +304,21 @@ pthInData = fullfile(outPathRoot,'MERGED');
 pthInComp = fullfile(outPathRoot,'MERGED_COMP');
 pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
 
-delComps = 1:2;
+delComps = 1;
 
 da = dir(fullfile(pthInComp,'*COMP.mat'));
 
 if ~isfolder(pthOut), mkdir(pthOut); end
 
 for i = 1:length(da)
-    t = textscan(da(i).name,'%s','delimiter','_');
+    t = split(da(i).name,'_');
     
-    fnData = join(string(t{1}(1:end-2)),'_')+"_MERGED";
+    fnData = join(string(t(1:end-2)),'_')+"_MERGED";
     
     load(fullfile(fileparts(da(i).folder),"MERGED",fnData+".mat"),'data');
     load(fullfile(da(i).folder,da(i).name),'comp');
     
-    fn = join(string(t{1}(1:end-3)),'_');
+    fn = join(string(t(1:end-2)),'_');
     fnOut = fn + "_CLEAN.mat";
     
     cfg = [];
@@ -389,4 +389,8 @@ ft_databrowser(cfg,comp);
 
 
 
+
+%% log off windows after finished
+
+system('shutdown -L')
 
