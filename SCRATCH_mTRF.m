@@ -122,7 +122,7 @@ for i = 1:length(cEEG)
     end
     
     model{i}.fnEEG = fnEEGcur;
-    model{i}.fnWAV = fnWav;
+    model{i}.fnWAV = fnWAVcur;
 end
 
 e = cellfun(@(a) isfield(a,'ERROR'),model);
@@ -137,7 +137,7 @@ save(ffn,'model');
 fprintf(' done\n')
 
 
-%%
+%% 
 
 modelDirection = -1; % 1: forward model; -1: backwards model
 
@@ -147,7 +147,11 @@ ffn = fullfile(outPathRoot,fn);
 load(ffn,'model');
 
 
-
+if modelDirection == 1
+    
+else
+    
+end
 
 
 %% log off windows after finished
