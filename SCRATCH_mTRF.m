@@ -1,6 +1,3 @@
-%%
-addpath(genpath('C:\Users\dstolz\Documents\src\mTRF-Toolbox'));
-
 %% REQUIRED
 outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 
@@ -135,23 +132,6 @@ ffn = fullfile(outPathRoot,fn);
 fprintf('Saving "%s" ...',ffn)
 save(ffn,'model');
 fprintf(' done\n')
-
-
-%% 
-
-modelDirection = -1; % 1: forward model; -1: backwards model
-
-fn = sprintf('mTRF_model_%d.mat',modelDirection);
-ffn = fullfile(outPathRoot,fn);
-
-load(ffn,'model');
-
-
-if modelDirection == 1
-    
-else
-    
-end
 
 
 %% log off windows after finished
