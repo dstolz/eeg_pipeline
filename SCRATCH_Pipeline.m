@@ -1,7 +1,6 @@
-%%
-addpath('C:\Users\dstolz\Documents\src\eeg_pipeline')
-addpath('C:\Users\dstolz\Documents\src\fieldtrip\')
-ft_defaults
+%% Required toolboxes:
+% fieldtrip (good idea to run ft_defaults first)
+% eeg_pipeline (mine)
 
 %% EEG PREPROCESSING PIPELINE
 % 1.  PREPROCESS
@@ -166,14 +165,16 @@ pthOut = fullfile(outPathRoot,'MERGED_COMP');
 chExclude = {'-Status','-EXG*'}; % include EOG channels
 
 cfg = [];
-cfg.method = 'pca';
+% cfg.method = 'pca';
 
-
-% cfg.method = 'fastica';
-% cfg.fastica.numOfIC = 'all';
-% cfg.fastica.maxNumIterations = 250;
+cfg.method = 'fastica';
+cfg.fastica.numOfIC = 'all';
+cfg.fastica.maxNumIterations = 250;
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
+
+
+pthOut = [pthOut '_' cfg.method];
 
 if ~isfolder(pthOut), mkdir(pthOut); end
 t = tic;
@@ -192,7 +193,7 @@ for i = 1:length(d)
     end
     
     [~,fnOut,~] = fileparts(ffnIn);
-    ffnOut = fullfile(pthOut,[fnOut '_COMP.mat']);
+    ffnOut = fullfile(pthOut,[fnOut '_COMP_' cfg.method '.mat']);
     
     
     if skipCompleted && exist(ffnOut,'file')
@@ -255,7 +256,7 @@ for i = 1:length(d)
     pause(1)
 end
 
-%% 3C. REMOVE ARTIFACTUAL COMPONENTS
+%% 3C(option 1). REMOVE ARTIFACTUAL COMPONENTS
 
 pthInData = fullfile(outPathRoot,'MERGED');
 pthInComp = fullfile(outPathRoot,'MERGED_COMP');
@@ -298,7 +299,7 @@ for i = 1:length(da)
     data_clean = ft_rejectcomponent(cfg,comp,data);
 end
 
-%% 3C. REMOVE ARTIFACTUAL COMPONENTS
+%% 3C(option 2). AUTOREMOVE ARTIFACTUAL COMPONENTS
 
 pthInData = fullfile(outPathRoot,'MERGED');
 pthInComp = fullfile(outPathRoot,'MERGED_COMP');
