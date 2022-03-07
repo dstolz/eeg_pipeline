@@ -6,13 +6,15 @@
 
 
 
-ValidStatus = "OK";
+ForegroundOrBackground = "Foreground";
 
-modelDirection = -1; % 1: forward model; -1: backwards model
+% dataSuffix = 'DSS';
+dataSuffix = 'CLEAN';
+
+modelDirection = 1; % 1: forward model; -1: backwards model
 
 modelPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 
-trainLUT = ["noTC" , "ACT"; "TC40" , "EXP"];
 
 
 ffnSubjectData = 'L:\Processed\P01\Aim 2\Aim 2 Participant Tracking.xlsx';
@@ -20,9 +22,6 @@ sheet = 'Summary_Study Dates';
 range = 'A1:E36';
 
 SD = read_subject_data(ffnSubjectData,sheet,range);
-
-% ind = ismember([SD.status],ValidStatus);
-% SD(~ind) = [];
 
 
 fn = fieldnames(SD);
@@ -39,7 +38,7 @@ fprintf('Groups: %s\n',char(join(groupFn,', ')))
 
 
 % load model data
-fn = sprintf('mTRF_model_%d.mat',modelDirection);
+fn = sprintf('mTRF_%s_%s_model_%d.mat',ForegroundOrBackground,dataSuffix,modelDirection);
 ffn = fullfile(modelPathRoot,fn);
 
 load(ffn,'model');
@@ -54,34 +53,37 @@ for i = 1:length(model)
 
     xt = x(trainIdx);
     
-    
-    indLUT = contains(trainLUT(:,1),xt,'IgnoreCase',true);
-    
-    ind = [SD.Subject] == x(subjIdx) ...
-        & [SD.Train] == trainLUT(indLUT,2);
-    
-%     if ~any(ind)
-%         fprintf(2,'Unable to match "%s" with log data\n',fnEEG)
-%         continue
-%     end
+        
+    ind = [SD.Subject] == x(subjIdx); % & [SD.Train] == trainLUT(indLUT,2);
     
     model{i}.Subject = SD(ind).Subject;
     model{i}.MCI     = SD(ind).has_MCI;
     model{i}.Age     = SD(ind).Age;
     model{i}.Train   = SD(ind).Train;
-    model{i}.isOK    = SD(ind).status;
+    model{i}.status  = SD(ind).status;
+    model{i}.TCcond  = x(trainIdx);
 end
 
 
 Data = cell2mat(model);
 
-indBase = [Data.isOK] == "OK" & ~[Data.MCI];
-for i = 1:length(uSD.Train)
+
+%
+indBase = [Data.status] == "OK" & ~[Data.MCI];
+for i = 1:length(uSD.Train) % "ACT" or "EXP"
     for j = 1:length(uSD.Age)
-        ind = indBase & [Data.Train] == uSD.Train(i) ...
+        ind = indBase ...
+            & [Data.Train] == uSD.Train(i) ...
             & [Data.Age] == uSD.Age(j);
         
+        fprintf('Age = "%s", Train = "%s"; Found %d\n',uSD.Age(j),uSD.Train(i),sum(ind))
+        
+        if ~any(ind), continue; end
+        
         w = {Data(ind).w};
+        
+        w = cellfun(@(a) mean(a,3),w,'uni',0);
+        w = cell2mat(w');
     end
 end
 

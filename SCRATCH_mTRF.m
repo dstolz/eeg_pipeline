@@ -11,9 +11,12 @@ pthStimulusDir = 'C:\Users\dstolz\Desktop\Stimuli Concatenated (10 minutes)\Save
 
 ForegroundOrBackground = "Foreground";
 
-modelDirection = -1; % 1: forward model; -1: backwards model
+% dataSuffix = 'DSS';
+dataSuffix = 'CLEAN';
+
+modelDirection = 1; % 1: forward model; -1: backwards model
 modelWindow = [-100 400]; % ms
-modelSplits = 80;
+modelSplits = 1; %80;
 
 modelLambda = 0.1; % regularization parameter
 modelFactor = 1;%0.0313;
@@ -23,11 +26,9 @@ fnWav = {d.name}';
 ffnWav = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
 
-% pthIn = fullfile(outPathRoot,'MERGED_CLEAN');
-% d = dir(fullfile(pthIn,'*CLEAN.mat'));
 
-pthIn = fullfile(outPathRoot,'MERGED_DSS');
-d = dir(fullfile(pthIn,'*DSS.mat'));
+pthIn = fullfile(outPathRoot,sprintf('MERGED_%s',dataSuffix));
+d = dir(fullfile(pthIn,sprintf('*%s.mat',dataSuffix)));
 
 
 fnEEG = {d.name}';
@@ -127,7 +128,7 @@ if any(e)
     fprintf('Finished with %d Errors!\n',sum(e))
 end
 
-fn = sprintf('mTRF_model_%d.mat',modelDirection);
+fn = sprintf('mTRF_%s_%s_model_%d.mat',ForegroundOrBackground,dataSuffix,modelDirection);
 ffn = fullfile(outPathRoot,fn);
 fprintf('Saving "%s" ...',ffn)
 save(ffn,'model');
