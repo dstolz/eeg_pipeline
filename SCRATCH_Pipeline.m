@@ -14,7 +14,8 @@
 %%  Required variables
 
 subjDir = 'L:\Raw\P01\Aim 2\';
-outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
+% outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
+outPathRoot = 'L:\Users\dstolz\EEGData\';
 skipCompleted = true;
 
 %% 1. PREPROCESS
@@ -26,9 +27,7 @@ cndDirs = {'Cortical','Post'};
 
 skipFileCode = {'Rest','rest'}; % exclude some sessions with this in its filename
 
-
-
-
+removeArtifactChannels = true;
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
 
@@ -139,6 +138,32 @@ for i = 1:length(toBeMerged)
     data.sampleinfo = [1 length(data.time{1})];
     
     
+    if removeArtifactChannels
+        cfg_art = [];
+        cfg_art.channel = ft_channelselection({'all','-Status','-*EOG','-EXG*','-A1','-A2'},data.label);
+        data = ft_selectdata(cfg_art,data);
+        
+        data_std = std(data.trial{1},[],2);
+        
+        [ci,bs] = bootci(1000,{@mean,data_std},'alpha',.025);
+        ind = data_std > ci(2);
+        
+        fprintf('outliers: %d;\t97.5%% CI = %.1f\n',sum(ind),ci(2))
+        idx = find(ind);
+        fprintf('\tCh. Label\tStd\n')
+        for k = 1:length(idx)
+            fprintf('\t%-2d. %-3s \t%.2f\n',idx(k),data.label{idx(k)},data_std(idx(k)))
+        end
+        
+        artLabel = cellfun(@(a) ['-' a],data.label(ind),'uni',0);
+        
+        cfg_art = [];
+        cfg_art.channel = ft_channelselection({'all',artLabel{:},'-Status','-*EOG','-EXG*','-A1','-A2'},data.label); %#ok<CCAT>
+        data = ft_selectdata(cfg_art,data);
+    end
+    
+    
+    
     s = string(split(fn,delimiter));
     s(1,orderTokenIdx) = join(s(:,orderTokenIdx)',"_");
     fnOut = join(s(1,:),delimiter);
@@ -170,6 +195,9 @@ cfg = [];
 cfg.method = 'fastica';
 cfg.fastica.numOfIC = 'all';
 cfg.fastica.maxNumIterations = 250;
+cfg.fastica.approach = 'symm';
+cfg.fastica.g = 'tanh';
+% cfg.fastica.numOfIC = 12;
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
@@ -210,12 +238,15 @@ fprintf('Completed processing %d files in %.1f minutes\n',length(d),toc(t)/60)
 %% 3B. SELECT NOISY COMPONENTS
 % Visualize and select artifactual components for removal. Reconstruction in 3C.
 
-pthIn = fullfile(outPathRoot,'MERGED_COMP');
+
+compMethod = 'fastica';
+
+pthIn = fullfile(outPathRoot,sprintf('MERGED_COMP_%s',compMethod));
 
 
 cfg = [];
 cfg.layout = 'biosemi64.lay';
-cfg.ylim = [-1 1]*150;
+% cfg.ylim = [-1 1]*150;
 cfg.viewmode = 'component';
 cfg.comment = 'no';
 cfg.blocksize = 30;
@@ -225,7 +256,7 @@ cfg.channel = 1:16;
 
 
 
-d = dir(fullfile(pthIn,'*COMP.mat'));
+d = dir(fullfile(pthIn,sprintf('*COMP_%s.mat',compMethod)));
 
 if skipCompleted
     ind = arrayfun(@(a) exist(fullfile(a.folder,[a.name(1:end-4) '_ARTIFACTS.txt']),'file')==2,d);
@@ -262,7 +293,7 @@ pthInData = fullfile(outPathRoot,'MERGED');
 pthInComp = fullfile(outPathRoot,'MERGED_COMP');
 pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
 
-delComps = 1;
+delComps = 1:10;
 
 da = dir(fullfile(pthInComp,'*ARTIFACTS.txt'));
 
@@ -302,19 +333,19 @@ end
 %% 3C(option 2). AUTOREMOVE ARTIFACTUAL COMPONENTS
 
 pthInData = fullfile(outPathRoot,'MERGED');
-pthInComp = fullfile(outPathRoot,'MERGED_COMP');
+pthInComp = fullfile(outPathRoot,'MERGED_COMP*');
 pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
 
-delComps = 1;
+delComps = 1:10;
 
-da = dir(fullfile(pthInComp,'*COMP.mat'));
+da = dir(fullfile(pthInComp,'*COMP*.mat'));
 
 if ~isfolder(pthOut), mkdir(pthOut); end
 
-for i = 1:length(da)
+for i = 1:4%:length(da)
     t = split(da(i).name,'_');
     
-    fnData = join(string(t(1:end-2)),'_')+"_MERGED";
+    fnData = join(string(t(1:end-3)),'_')+"_MERGED";
     
     load(fullfile(fileparts(da(i).folder),"MERGED",fnData+".mat"),'data');
     load(fullfile(da(i).folder,da(i).name),'comp');
