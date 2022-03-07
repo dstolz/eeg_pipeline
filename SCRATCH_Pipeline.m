@@ -27,7 +27,6 @@ cndDirs = {'Cortical','Post'};
 
 skipFileCode = {'Rest','rest'}; % exclude some sessions with this in its filename
 
-removeArtifactChannels = true;
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
 
@@ -101,6 +100,9 @@ fprintf('Total preprocessing time = %.1f minutes\n',toc(st)/60)
 
 pathOut = fullfile(outPathRoot,'MERGED');
 
+
+removeArtifactChannels = true;
+
 orderTokenIdx = 5;
 delimiter = "_";
 
@@ -111,7 +113,7 @@ toBeMerged = merge_data_files(pathToPreprocessed,'mat',orderTokenIdx,[],delimite
 
 if ~isfolder(pathOut), mkdir(pathOut); end
 
-fprintf('Will merge %d groups of files\n',length(toBeMerged))
+fprintf('Will attempt to merge %d groups of files\n',length(toBeMerged))
 for i = 1:length(toBeMerged)
     fprintf('\nMerging %d of %d groups\n',i,length(toBeMerged))
     
@@ -146,7 +148,7 @@ for i = 1:length(toBeMerged)
         data_std = std(data.trial{1},[],2);
         
         [ci,bs] = bootci(1000,{@mean,data_std},'alpha',.025);
-        ind = data_std > ci(2);
+        ind = data_std > ci(2) & data_std > 50;
         
         fprintf('outliers: %d;\t97.5%% CI = %.1f\n',sum(ind),ci(2))
         idx = find(ind);
