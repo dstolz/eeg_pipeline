@@ -14,8 +14,8 @@
 %%  Required variables
 
 subjDir = 'L:\Raw\P01\Aim 2\';
-% outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 outPathRoot = 'L:\Users\dstolz\EEGData\';
+
 skipCompleted = true;
 
 %% 1. PREPROCESS
