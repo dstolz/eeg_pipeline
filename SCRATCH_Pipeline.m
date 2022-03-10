@@ -45,15 +45,20 @@ cfg_Preprocess.preprocessing.detrend = 'yes';
 cfg_Preprocess.preprocessing.bpfreq = [2 35]; %[1 120];
 cfg_Preprocess.preprocessing.bpfilter = 'yes';
 
+eeg_preamble
+
 [dataPaths,subjs] = get_data_paths(subjDir,subjDirStartCode,cndDirs,'bdf',skipFileCode);
 fprintf('Data from %d subjects will be processed\n',length(subjs))
+
+if ~isfolder(outPathRoot), mkdir(outPathRoot); end
 
 st = tic;
 for s = 1:length(subjs)
     curSubj = char(subjs(s));
-    fprintf('\n%s\nProcessing Subject %d of %d: "%s"\n',repmat('~',1,50),s,length(subjs),curSubj)
     ffn = dataPaths.(curSubj);
     
+    fprintf('\n%s\nProcessing Subject %d of %d: "%s"\n\t%d files found\n',repmat('~',1,50),s,length(subjs),curSubj,length(ffn))
+
     for i = 1:length(ffn)
         
         try
@@ -85,7 +90,7 @@ for s = 1:length(subjs)
             fprintf(' done\n')
             
         catch me
-            fprintf(2,'ERROR!\n')
+            fprintf(2,'ERROR!\n%s\n%s\n\n',me.identifier,me.message)
         end
     end
 end
@@ -110,7 +115,7 @@ pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
 
 toBeMerged = merge_data_files(pathToPreprocessed,'mat',orderTokenIdx,[],delimiter);
 
-
+eeg_preamble
 if ~isfolder(pathOut), mkdir(pathOut); end
 
 fprintf('Will attempt to merge %d groups of files\n',length(toBeMerged))
@@ -160,7 +165,7 @@ for i = 1:length(toBeMerged)
         artLabel = cellfun(@(a) ['-' a],data.label(ind),'uni',0);
         
         cfg_art = [];
-        cfg_art.channel = ft_channelselection({'all',artLabel{:},'-Status','-*EOG','-EXG*','-A1','-A2'},data.label); %#ok<CCAT>
+        cfg_art.channel = ft_channelselection({'all',artLabel{:},'-EXG*'},data.label); %#ok<CCAT>
         data = ft_selectdata(cfg_art,data);
     end
     
@@ -189,20 +194,16 @@ end
 pthIn  = fullfile(outPathRoot,'MERGED');
 pthOut = fullfile(outPathRoot,'MERGED_COMP');
 
-chExclude = {'-Status','-EXG*'}; % include EOG channels
+chExclude = {'-Status','-EXG*'}; % include non-signal channels
 
 cfg = [];
-% cfg.method = 'pca';
 
-cfg.method = 'fastica';
-cfg.fastica.numOfIC = 'all';
-cfg.fastica.maxNumIterations = 250;
-cfg.fastica.approach = 'symm';
-cfg.fastica.g = 'tanh';
-% cfg.fastica.numOfIC = 12;
+cfg.method = 'runica';
+
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
+eeg_preamble
 
 pthOut = [pthOut '_' cfg.method];
 
@@ -240,6 +241,7 @@ fprintf('Completed processing %d files in %.1f minutes\n',length(d),toc(t)/60)
 %% 3B. SELECT NOISY COMPONENTS
 % Visualize and select artifactual components for removal. Reconstruction in 3C.
 
+eeg_preamble
 
 compMethod = 'fastica';
 
@@ -251,7 +253,7 @@ cfg.layout = 'biosemi64.lay';
 % cfg.ylim = [-1 1]*150;
 cfg.viewmode = 'component';
 cfg.comment = 'no';
-cfg.blocksize = 30;
+cfg.blocksize = 60;
 cfg.channel = 1:16;
 % cfg.preproc.hilbert = 'abs';
 
