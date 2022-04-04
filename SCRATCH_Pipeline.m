@@ -431,6 +431,9 @@ ft_databrowser(cfg,comp);
 
 
 %% log off windows after finished
+fprintf('Attempting to log off ...\n')
 
 system('shutdown -L')
+
+fprintf(2,'Logging off failed!\nIf you need this computer, then go ahead and log off this account\n')
 
