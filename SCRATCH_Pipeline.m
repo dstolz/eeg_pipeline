@@ -5,9 +5,10 @@
 %% EEG PREPROCESSING PIPELINE
 % 1.  PREPROCESS
 % 2.  CONCATENATE DATA
-% 3A. DENOISING
-% 3B. SELECT NOISY COMPONENTS
-% 3C. REMOVE ARTIFACTUAL COMPONENTS
+% 3A. ICA DENOISING
+% 3B. PREGENERATE TOPOGRAPHIC MAPS OF COMPONENTS
+% 3C. VISUALLY MARK ARTIFACTUAL COMPONENTS
+% 3D. REMOVE ARTIFACTUAL COMPONENTS
 % 4.  COMPUTE DSS COMPONENTS BEFORE RECONSTRUCTION
 
 
@@ -204,7 +205,6 @@ cfg = [];
 
 cfg.method = 'runica';
 
-
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 
 eeg_preamble
@@ -242,130 +242,150 @@ for i = 1:length(d)
 end
 fprintf('Completed processing %d files in %.1f minutes\n',length(d),toc(t)/60)
 
-%% 3B. SELECT NOISY COMPONENTS
-% Visualize and select artifactual components for removal. Reconstruction in 3C.
+
+
+
+%% 3B. PREGENERATE TOPOGRAPHIC MAPS FOR VISUAL REJECTION OF ARTIFACTUAL COMPONENTS
 
 eeg_preamble
 
 compMethod = 'fastica';
-
-pthIn = fullfile(outPathRoot,sprintf('MERGED_COMP_%s',compMethod));
-
+% compMethod = 'runica';
 
 cfg = [];
-cfg.layout = 'biosemi64.lay';
-% cfg.ylim = [-1 1]*150;
-cfg.viewmode = 'component';
+cfg.layout  = 'biosemi64.lay';
+cfg.marker  = 'off';
+cfg.shading = 'interp';
+cfg.style   = 'straight';
 cfg.comment = 'no';
-cfg.blocksize = 60;
-cfg.channel = 1:16;
-% cfg.preproc.hilbert = 'abs';
+cfg.title   = 'auto';
 
+pthIn  = fullfile(outPathRoot,sprintf('MERGED_COMP_%s',compMethod));
+pthOut = fullfile(outPathRoot,'MERGED_CLEAN');
+pthFig = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
 
-
+if ~isfolder(pthOut), mkdir(pthOut); end
+if ~isfolder(pthFig), mkdir(pthFig); end
 
 d = dir(fullfile(pthIn,sprintf('*COMP_%s.mat',compMethod)));
 
-if skipCompleted
-    ind = arrayfun(@(a) exist(fullfile(a.folder,[a.name(1:end-4) '_ARTIFACTS.txt']),'file')==2,d);
-    fprintf(2,'Skipping %d existing artifact component files\n',sum(ind))
-    d(ind) = [];
-end
-
-c = repmat('*',1,50);
 for i = 1:length(d)
-    fprintf('\n%s\n\t%d of %d: %s\n%s\n',c,i,length(d),d(i).name,c)
+    ffn = fullfile(d(i).folder,d(i).name);
+    fnOut = [d(i).name(1:end-4) '_CLEAN.mat'];
+    ffnOut = fullfile(pthOut,fnOut);
     
-    [~,fnIn,~] = fileparts(d(i).name);
+    fnFig = [d(i).name(1:end-4) '_TOPOFIG.fig'];
+    ffnFig = fullfile(pthFig,fnFig);
     
-    fnCompArt  = [fnIn '_ARTIFACTS.txt'];
-    ffnCompArt = fullfile(pthIn,fnCompArt);
     
-    fid = fopen(ffnCompArt,'wt');
-    fprintf(fid,'%s\n',fnIn);
-    fclose(fid);
-    winopen(ffnCompArt);
-    fprintf('Enter artifact channels: <a href = "matlab:winopen(''%s'')">%s</a>\n', ...
-        ffnCompArt,fnCompArt)
-    
-    load(fullfile(d(i).folder,d(i).name));
-    ft_databrowser(cfg,comp);
-    set(gcf,'name',d(i).name,'WindowState','maximized')
-    waitfor(gcf)
-    pause(1)
-end
-
-%% 3C(option 1). REMOVE ARTIFACTUAL COMPONENTS
-
-pthInData = fullfile(outPathRoot,'MERGED');
-pthInComp = fullfile(outPathRoot,'MERGED_COMP');
-pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
-
-delComps = 1:10;
-
-da = dir(fullfile(pthInComp,'*ARTIFACTS.txt'));
-
-if ~isfolder(pthOut), mkdir(pthOut); end
-
-for i = 1:length(da)
-    
-    ffnCompArt = fullfile(da(i).folder,da(i).name);
-    fid = fopen(ffnCompArt,'r');
-    fgetl(fid); % discard header line
-    c = fgetl(fid);
-    fclose(fid);
-    
-    if isequal(c,-1)
-        fprintf('No components marked as artifact for "%s"\n',da(i).name)
+    if skipCompleted && exist(ffnFig,'file')
+        fprintf(2,'\tTopographic figure file already exists, skippping: %s\n',fnOut)
         continue
     end
-    c = str2num(c); %#ok<ST2NM>
     
-    t = textscan(da(i).name,'%s','delimiter','_');
+    fprintf('\n%d/%d. Loading components data from "%s" ...',i,length(d),d(i).name)
+    load(ffn,'comp');
+    fprintf(' done\n')
     
-    fnComp = join(string(t{1}(1:end-1)),'_');
-    fnData = join(string(t{1}(1:end-2)),'_');
+    cfg.component = 1:length(comp.label);
     
-    load(fullfile(fileparts(da(i).folder),"MERGED",fnData+".mat"),'data');
-    load(fullfile(da(i).folder,fnComp+".mat"),'comp');
+    f = figure('WindowState','Maximized');
     
-    fn = join(string(t{1}(1:end-3)),'_');
-    fnOut = fn + "_CLEAN.mat";
+    ft_warning off FieldTrip:getdimord:warning_dimord_could_not_be_determined
+    ft_topoplotIC(cfg,comp)
+    ft_warning on FieldTrip:getdimord:warning_dimord_could_not_be_determined
+        
+    h = findobj(f,'-property','ButtonDownFcn');
     
-    cfg = [];
-    cfg.outputfile = char(fullfile(pthOut,fnOut));
-    cfg.component = c;
-    data_clean = ft_rejectcomponent(cfg,comp,data);
+    set(h,'ButtonDownFcn',@gui_toggle_component);
+    ax = findobj(f,'type','axes');
+    
+    f.CloseRequestFcn = @gui_clean_components;
+    f.Name = d(i).name;
+    f.Pointer = 'hand';
+    
+    f.UserData.compToBeRejected = false(size(ax));
+    f.UserData.cfg = cfg;
+    f.UserData.compcfg = comp.cfg;
+    f.UserData.ffnOut = ffnOut;
+    f.UserData.TimeStamp = now;
+    
+    drawnow
+    
+    fprintf('Saving figure "%s" ...',fnFig)
+    savefig(f,ffnFig);
+    fprintf(' done\n')
+    
+    delete(f)
 end
 
-%% 3C(option 2). AUTOREMOVE ARTIFACTUAL COMPONENTS
 
-pthInData = fullfile(outPathRoot,'MERGED');
-pthInComp = fullfile(outPathRoot,'MERGED_COMP*');
-pthOut    = fullfile(outPathRoot,'MERGED_CLEAN');
+%% 3C. SELECT ARTIFACTUAL COMPONENTS
+eeg_preamble
 
-delComps = 1:10;
+pthFig = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
 
-da = dir(fullfile(pthInComp,'*COMP*.mat'));
+d = dir(fullfile(pthFig,'*.fig'));
 
-if ~isfolder(pthOut), mkdir(pthOut); end
+set(groot,'defaultAxesToolbarVisible','off')
 
-for i = 1:4%:length(da)
-    t = split(da(i).name,'_');
+for i = 1:length(d)
+    fprintf('%d/%d. "%s"\n',i,length(d),d(i).name)
     
-    fnData = join(string(t(1:end-3)),'_')+"_MERGED";
+    ffnFig = fullfile(d(i).folder,d(i).name);
     
-    load(fullfile(fileparts(da(i).folder),"MERGED",fnData+".mat"),'data');
-    load(fullfile(da(i).folder,da(i).name),'comp');
+    f = openfig(ffnFig,'invisible');
     
-    fn = join(string(t(1:end-2)),'_');
-    fnOut = fn + "_CLEAN.mat";
+    if skipCompleted && exist(f.UserData.ffnOut,'file')
+        fprintf(2,'\tCleaned file already exists, skippping: %s\n',fnOut)
+        continue
+    end
     
-    cfg = [];
-    cfg.outputfile = char(fullfile(pthOut,fnOut));
-    cfg.component = delComps;
-    data_clean = ft_rejectcomponent(cfg,comp,data);
+    f.Visible = 'on';
+    waitfor(f);
 end
+
+set(groot,'defaultAxesToolbarVisible','on')
+
+
+%% 3D. REJECT MARKED COMPONENTS FROM SAVED FIG
+
+eeg_preamble
+
+pthFig = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
+
+d = dir(fullfile(pthFig,'*.fig'));
+
+for i = 1:length(d)
+    fprintf('%d/%d. "%s"\n',i,length(d),d(i).name)
+    
+    ffnFig = fullfile(d(i).folder,d(i).name);
+    
+    f = openfig(ffnFig,'invisible');
+    
+    ind = f.UserData.compToBeRejected;
+    if ~any(ind)
+        fprintf(2,'No components marked as artifacts, skipping\n')
+        delete(f);
+        continue
+    end
+    
+    
+    fprintf('\tLoading components data ...')
+    load(f.UserData.compcfg.outputfile); % components
+    fprintf(' done\n')
+
+    rcfg = [];
+    rcfg.outputfile = f.UserData.ffnOut;
+    rcfg.component = find(ind);
+    ft_rejectcomponent(rcfg,comp);
+
+    delete(f);
+    
+end
+
+
+
 %% Visualize cleaned data
 cfg = [];
 cfg.layout = 'biosemi64.lay';
