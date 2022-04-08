@@ -166,11 +166,8 @@ for i = 1:length(toBeMerged)
         artLabel = cellfun(@(a) ['-' a],data.label(ind),'uni',0);
         
         cfg_art = [];
-<<<<<<< HEAD
-        cfg_art.channel = ft_channelselection({'all',artLabel{:},'-EXG*'},data.label); %#ok<CCAT>
-=======
         cfg_art.channel = ft_channelselection({'all',artLabel{:},'-Status','-EXG*'},data.label); %#ok<CCAT>
->>>>>>> 0bae6eb (altered channel selection)
+
         data = ft_selectdata(cfg_art,data);
     end
     
