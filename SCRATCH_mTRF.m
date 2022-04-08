@@ -1,13 +1,9 @@
 %% REQUIRED
-outPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
-
+outPathRoot = 'L:\Users\dstolz\EEGData\';
+pthStimulusDir = 'L:\Users\dstolz\Stimuli Concatenated (10 minutes)\Saved Concatenated Files';
 
 
 %% TRF analysis - BONES
-
-
-pthStimulusDir = 'C:\Users\dstolz\Desktop\Stimuli Concatenated (10 minutes)\Saved Concatenated Files';
-
 
 ForegroundOrBackground = "Foreground";
 
@@ -29,8 +25,6 @@ ffnWav = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
 pthIn = fullfile(outPathRoot,sprintf('MERGED_%s',dataSuffix));
 d = dir(fullfile(pthIn,sprintf('*%s.mat',dataSuffix)));
-
-
 fnEEG = {d.name}';
 ffnEEG = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
@@ -50,14 +44,14 @@ for i = 1:length(cEEG)
         % first match slightly differently named EEG and WAV files
         x = cEEG{i};
         if startsWith(x(tokEEG.TC),"TC",'IgnoreCase',true)
-            tc = "TC";
+            tc = "TC40";
         elseif startsWith(x(tokEEG.TC),"No",'IgnoreCase',true)
-            tc = "NoTC";
+            tc = "NoTC40";
         else
             tc = "";
         end
         wfn = x(tokEEG.Char) + "_" + ForegroundOrBackground + "_" + tc ...
-            + digitsPattern(2) + "_" + x(tokEEG.F1) + "_" + x(tokEEG.F2) ...
+            + "_" + x(tokEEG.F1) + "_" + x(tokEEG.F2) ...
             + "_Pool_" + x{tokEEG.Pool}(end);
         ind = startsWith(fnWav,wfn,'IgnoreCase',true);
         
@@ -66,7 +60,7 @@ for i = 1:length(cEEG)
         if ~any(ind)
             model{i}.fnEEG = fnEEG{i};
             model{i}.fnWAV = '';
-            fprintf(2,'No matching Wav files found! Figure out what''s wrong and run again\n')
+            fprintf(2,'%s\nNo matching Wav files found! Figure out what''s wrong and run again\n',fnEEGcur)
             continue
         end
         
