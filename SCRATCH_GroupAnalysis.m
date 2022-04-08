@@ -4,6 +4,7 @@
 % compressed sentences. ACT means that the participant is receiving training 
 % on recognizing sentences in noise.
 
+modelPathRoot = 'L:\Users\dstolz\EEGData\';
 
 
 ForegroundOrBackground = "Foreground";
@@ -13,7 +14,6 @@ dataSuffix = 'CLEAN';
 
 modelDirection = 1; % 1: forward model; -1: backwards model
 
-modelPathRoot = 'C:\Users\dstolz\Desktop\EEGData';
 
 
 
@@ -69,6 +69,7 @@ Data = cell2mat(model);
 
 
 %
+f = figure(9999);
 indBase = [Data.status] == "OK" & ~[Data.MCI];
 for i = 1:length(uSD.Train) % "ACT" or "EXP"
     for j = 1:length(uSD.Age)
