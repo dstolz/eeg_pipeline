@@ -29,6 +29,31 @@ for i = 1:length(axAll)
     end
 end
 
+idx = find(ind);
+cfg = [];
+cfg.component = idx;
+data = ft_rejectcomponent(cfg,f.UserData.comp);
+
+
 sgtitle(sprintf('%d components marked',sum(ind)))
 
+if ~isfield(f.UserData,'timePlotFigure') ...
+        || isempty(f.UserData.timePlotFigure) ...
+        || ~isvalid(f.UserData.timePlotFigure)
+    f.UserData.timePlotFigure = figure('color','w');
+    movegui(f.UserData.timePlotFigure,'onscreen');
+    f.UserData.timePlotAxes = axes(f.UserData.timePlotFigure);
+end
+
+plot_data(data,f.UserData.timePlotFigure);
+    
+function plot_data(data,ax)
+if nargin < 2 || isempty(ax), ax = gca; end
+
+y = data.trial{1}./max(abs(data.trial{1}),[],2);
+y = (1:size(data.trial{1},1))' + y;
+
+plot(ax,data.time{1},y','color','k');
+
+axis(ax,'tight');
 
