@@ -26,5 +26,4 @@ end
 
 
 
-assignin('base',varName,ind)
 
