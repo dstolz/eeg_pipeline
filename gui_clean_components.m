@@ -1,5 +1,7 @@
 function gui_clean_components(hObj,event,varargin)
 
+if isempty(hObj.UserData), delete(hObj); return; end
+
 ind = hObj.UserData.compToBeRejected;
 
 r = questdlg(sprintf('%d components are marked to be rejected\n\nWhat do you want to do?',sum(ind)),'CLEANING','Save','Discard','Cancel','Save');
