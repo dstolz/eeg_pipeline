@@ -1,5 +1,5 @@
-function mergeFiles = merge_data_files(pth,ext,orderTokenIdx,orderRegSymbol,delimiter)
-% mergeFiles = merge_data_files(pth,[ext],[orderTokenIdx],[orderRegSymbol],[delimiter])
+function mergeFiles = merge_data_files(pth,orderTokenIdx,orderRegSymbol,delimiter)
+% mergeFiles = merge_data_files(pth,[orderTokenIdx],[orderRegSymbol],[delimiter])
 % 
 % Returns cell array of files to be merged based on tokens in the
 % filenames.
@@ -7,12 +7,12 @@ function mergeFiles = merge_data_files(pth,ext,orderTokenIdx,orderRegSymbol,deli
 
 % DJS 2/2022
 
-narginchk(1,5);
+narginchk(1,4);
 
-if nargin < 2 || isempty(ext), ext = 'mat'; end
-if nargin < 3, orderTokenIdx = []; end
-if nargin < 4 || isempty(orderRegSymbol), orderRegSymbol = "\w*"; end
-if nargin < 5 || isempty(delimiter), delimiter = "_"; end
+ext = 'mat';
+if nargin < 2, orderTokenIdx = []; end
+if nargin < 3 || isempty(orderRegSymbol), orderRegSymbol = "\w*"; end
+if nargin < 4 || isempty(delimiter), delimiter = "_"; end
 
 d = dir(fullfile(pth,['*.' ext]));
 
