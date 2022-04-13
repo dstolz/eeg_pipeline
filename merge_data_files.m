@@ -20,11 +20,25 @@ ffn = arrayfun(@(a) fullfile(a.folder,a.name),d,'uni',0);
 
 fn = {d.name}';
 fn = cellfun(@(a) a(1:end-4),fn,'uni',0);
-s = string(split(fn,delimiter));
+s = cellfun(@(a) string(split(a,delimiter))',fn,'uni',0); % may have unequal number of elements
 
-t = cell(1,size(s,2));
-for i = 1:size(s,2)
-    t{i} = unique(s(:,i));
+ne = cellfun(@numel,s);
+m = mode(ne);
+ind = ne ~= m;
+n = sum(ind);
+if n > 0
+    fprintf(2,'Found %d files that do not conform to the most common format\n\tSkipping:\n',n)
+    cellfun(@(a,b) fprintf(2,'\t\t%d. "%s"\n',a,b),num2cell(find(ind)),fn(ind))
+    s(ind) = [];
+end
+
+for i = 1:length(s)
+    x(i,:) = s{i};
+end
+
+t = cell(1,size(x,2));
+for i = 1:size(x,2)
+    t{i} = unique(x(:,i));
 end
 
 t{orderTokenIdx} = orderRegSymbol;
