@@ -15,7 +15,7 @@
 %%  Required variables
 
 subjDir = 'L:\Raw\P01\Aim 2\';
-outPathRoot = 'L:\Users\dstolz\EEGData\';
+outPathRoot = 'L:\Users\dstolz\EEGData_32\';
 
 skipCompleted = true;
 
@@ -23,8 +23,8 @@ skipCompleted = true;
 
 subjDirStartCode = 'P01*';
 
-% cndDirs = {'Cortical','Pre'};
-cndDirs = {'Cortical','Post'};
+cndDirs = {'Cortical','Pre'};
+% cndDirs = {'Cortical','Post'};
 
 skipFileCode = {'Rest','rest'}; % exclude some sessions with this in its filename
 
@@ -36,14 +36,16 @@ cfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';
 cfg_Preprocess.definetrial.trialdef.eventvalue = [3 4];
 
 cfg_Preprocess.resample = [];
-cfg_Preprocess.resample.resamplefs = 256;
+cfg_Preprocess.resample.resamplefs = 32;
+% cfg_Preprocess.resample.resamplefs = 256;
 
 
 cfg_Preprocess.preprocessing = [];
 cfg_Preprocess.preprocessing.reref = 'yes';
 cfg_Preprocess.preprocessing.refchannel = {'A1' 'A2'};
 cfg_Preprocess.preprocessing.detrend = 'yes';
-cfg_Preprocess.preprocessing.bpfreq = [2 35]; %[1 120];
+% cfg_Preprocess.preprocessing.bpfreq = [2 35]; %[1 120];
+cfg_Preprocess.preprocessing.bpfreq = [1 14];
 cfg_Preprocess.preprocessing.bpfilter = 'yes';
 
 eeg_preamble
@@ -89,7 +91,7 @@ for s = 1:length(subjs)
             fprintf('Saving "%s" ...',outFfn)
             save(outFfn,'data');
             fprintf(' done\n')
-            
+            clear data
         catch me
             fprintf(2,'ERROR!\n%s\n%s\n\n',me.identifier,me.message)
         end
@@ -114,7 +116,7 @@ delimiter = "_";
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
 
-toBeMerged = merge_data_files(pathToPreprocessed,'mat',orderTokenIdx,[],delimiter);
+toBeMerged = merge_data_files(pathToPreprocessed,orderTokenIdx,[],delimiter);
 
 eeg_preamble
 if ~isfolder(pathOut), mkdir(pathOut); end
@@ -200,7 +202,8 @@ chExclude = {'-Status','-EXG*'}; % include non-signal channels
 
 cfg = [];
 
-cfg.method = 'runica';
+% cfg.method = 'runica';
+cfg.method = 'fastica';
 
 d = dir(fullfile(pthIn,'*MERGED.mat'));
 

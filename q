@@ -1,0 +1,71 @@
+[1mdiff --git a/SCRATCH_Pipeline.m b/SCRATCH_Pipeline.m[m
+[1mindex fe0b926..5380539 100644[m
+[1m--- a/SCRATCH_Pipeline.m[m
+[1m+++ b/SCRATCH_Pipeline.m[m
+[36m@@ -15,7 +15,7 @@[m
+ %%  Required variables[m
+ [m
+ subjDir = 'L:\Raw\P01\Aim 2\';[m
+[31m-outPathRoot = 'L:\Users\dstolz\EEGData\';[m
+[32m+[m[32moutPathRoot = 'L:\Users\dstolz\EEGData_32\';[m[41m[m
+ [m
+ skipCompleted = true;[m
+ [m
+[36m@@ -23,8 +23,8 @@[m [mskipCompleted = true;[m
+ [m
+ subjDirStartCode = 'P01*';[m
+ [m
+[31m-% cndDirs = {'Cortical','Pre'};[m
+[31m-cndDirs = {'Cortical','Post'};[m
+[32m+[m[32mcndDirs = {'Cortical','Pre'};[m[41m[m
+[32m+[m[32m% cndDirs = {'Cortical','Post'};[m[41m[m
+ [m
+ skipFileCode = {'Rest','rest'}; % exclude some sessions with this in its filename[m
+ [m
+[36m@@ -36,14 +36,16 @@[m [mcfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';[m
+ cfg_Preprocess.definetrial.trialdef.eventvalue = [3 4];[m
+ [m
+ cfg_Preprocess.resample = [];[m
+[31m-cfg_Preprocess.resample.resamplefs = 256;[m
+[32m+[m[32mcfg_Preprocess.resample.resamplefs = 32;[m[41m[m
+[32m+[m[32m% cfg_Preprocess.resample.resamplefs = 256;[m[41m[m
+ [m
+ [m
+ cfg_Preprocess.preprocessing = [];[m
+ cfg_Preprocess.preprocessing.reref = 'yes';[m
+ cfg_Preprocess.preprocessing.refchannel = {'A1' 'A2'};[m
+ cfg_Preprocess.preprocessing.detrend = 'yes';[m
+[31m-cfg_Preprocess.preprocessing.bpfreq = [2 35]; %[1 120];[m
+[32m+[m[32m% cfg_Preprocess.preprocessing.bpfreq = [2 35]; %[1 120];[m[41m[m
+[32m+[m[32mcfg_Preprocess.preprocessing.bpfreq = [1 14];[m[41m[m
+ cfg_Preprocess.preprocessing.bpfilter = 'yes';[m
+ [m
+ eeg_preamble[m
+[36m@@ -89,7 +91,7 @@[m [mfor s = 1:length(subjs)[m
+             fprintf('Saving "%s" ...',outFfn)[m
+             save(outFfn,'data');[m
+             fprintf(' done\n')[m
+[31m-            [m
+[32m+[m[32m            clear data[m[41m[m
+         catch me[m
+             fprintf(2,'ERROR!\n%s\n%s\n\n',me.identifier,me.message)[m
+         end[m
+[36m@@ -114,7 +116,7 @@[m [mdelimiter = "_";[m
+ [m
+ pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');[m
+ [m
+[31m-toBeMerged = merge_data_files(pathToPreprocessed,'mat',orderTokenIdx,[],delimiter);[m
+[32m+[m[32mtoBeMerged = merge_data_files(pathToPreprocessed,orderTokenIdx,[],delimiter);[m[41m[m
+ [m
+ eeg_preamble[m
+ if ~isfolder(pathOut), mkdir(pathOut); end[m
+[36m@@ -200,7 +202,8 @@[m [mchExclude = {'-Status','-EXG*'}; % include non-signal channels[m
+ [m
+ cfg = [];[m
+ [m
+[31m-cfg.method = 'runica';[m
+[32m+[m[32m% cfg.method = 'runica';[m[41m[m
+[32m+[m[32mcfg.method = 'fastica';[m[41m[m
+ [m
+ d = dir(fullfile(pthIn,'*MERGED.mat'));[m
+ [m
