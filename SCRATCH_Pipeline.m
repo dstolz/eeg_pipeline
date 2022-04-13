@@ -305,6 +305,7 @@ for i = 1:length(d)
     
     f.UserData.compToBeRejected = false(size(ax));
     f.UserData.cfg = cfg;
+    f.UserData.comp = comp;
     f.UserData.compcfg = comp.cfg;
     f.UserData.ffnOut = ffnOut;
     f.UserData.TimeStamp = now;
