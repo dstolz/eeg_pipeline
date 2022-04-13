@@ -109,7 +109,7 @@ fprintf('Total preprocessing time = %.1f minutes\n',toc(st)/60)
 pathOut = fullfile(outPathRoot,'MERGED');
 
 
-removeArtifactChannels = true;
+remArtifactStdThr = 50; % # std threshold; 0 or empty to not threshold
 
 orderTokenIdx = 5;
 delimiter = "_";
@@ -148,7 +148,7 @@ for i = 1:length(toBeMerged)
     data.sampleinfo = [1 length(data.time{1})];
     
     
-    if removeArtifactChannels
+    if ~isempty(remArtifactStdThr) && remArtifactStdThr > 0
         cfg_art = [];
         cfg_art.channel = ft_channelselection({'all','-Status','-*EOG','-EXG*'},data.label);
         data = ft_selectdata(cfg_art,data);
@@ -156,7 +156,7 @@ for i = 1:length(toBeMerged)
         data_std = std(data.trial{1},[],2);
         
         [ci,bs] = bootci(1000,{@mean,data_std},'alpha',.025);
-        ind = data_std > ci(2) & data_std > 50;
+        ind = data_std > ci(2) & data_std > remArtifactStdThr;
         
         fprintf('outliers: %d;\t97.5%% CI = %.1f\n',sum(ind),ci(2))
         idx = find(ind);
