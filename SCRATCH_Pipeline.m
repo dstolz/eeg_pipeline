@@ -112,11 +112,10 @@ pathOut = fullfile(outPathRoot,'MERGED');
 remArtifactStdThr = 50; % # std threshold; 0 or empty to not threshold
 
 orderTokenIdx = 5;
-delimiter = "_";
 
 pathToPreprocessed = fullfile(outPathRoot,'PREPROCESSED');
 
-toBeMerged = merge_data_files(pathToPreprocessed,orderTokenIdx,[],delimiter);
+toBeMerged = merge_data_files(pathToPreprocessed,orderTokenIdx);
 
 eeg_preamble
 if ~isfolder(pathOut), mkdir(pathOut); end
