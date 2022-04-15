@@ -294,8 +294,9 @@ for i = 1:length(d)
     ft_topoplotIC(cfg,comp)
     ft_warning on FieldTrip:getdimord:warning_dimord_could_not_be_determined
         
+    f.CreateFcn = @gui_toggle_component;
+
     h = findobj(f,'-property','ButtonDownFcn');
-    
     set(h,'ButtonDownFcn',@gui_toggle_component);
     ax = findobj(f,'type','axes');
     
@@ -320,12 +321,18 @@ for i = 1:length(d)
 end
 
 
-%% 3C. SELECT ARTIFACTUAL COMPONENTS
+%% 3C. REJECT ARTIFACTUAL COMPONENTS
 eeg_preamble
+
+randomizeOrder = true;
 
 pthFig = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
 
 d = dir(fullfile(pthFig,'*.fig'));
+
+if randomizeOrder
+    d = d(randperm(length(d)));
+end
 
 set(groot,'defaultAxesToolbarVisible','off')
 
@@ -346,43 +353,6 @@ for i = 1:length(d)
 end
 
 set(groot,'defaultAxesToolbarVisible','on')
-
-
-%% 3D. REJECT MARKED COMPONENTS FROM SAVED FIG
-
-eeg_preamble
-
-pthFig = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
-
-d = dir(fullfile(pthFig,'*.fig'));
-
-for i = 1:length(d)
-    fprintf('%d/%d. "%s"\n',i,length(d),d(i).name)
-    
-    ffnFig = fullfile(d(i).folder,d(i).name);
-    
-    f = openfig(ffnFig,'invisible');
-    
-    ind = f.UserData.compToBeRejected;
-    if ~any(ind)
-        fprintf(2,'No components marked as artifacts, skipping\n')
-        delete(f);
-        continue
-    end
-    
-    
-    fprintf('\tLoading components data ...')
-    load(f.UserData.compcfg.outputfile); % components
-    fprintf(' done\n')
-
-    rcfg = [];
-    rcfg.outputfile = f.UserData.ffnOut;
-    rcfg.component = find(ind);
-    ft_rejectcomponent(rcfg,comp);
-
-    delete(f);
-    
-end
 
 
 

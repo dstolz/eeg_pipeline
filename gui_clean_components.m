@@ -13,13 +13,19 @@ switch r
     case 'Discard'
         delete(hObj);
         fprintf(2,'Changes were discarded\n')
-        return
         
     case 'Save'
         hObj.Pointer = 'watch'; drawnow
         hObj.UserData.TimeStamp = now;
         fprintf('Saving ...')
+        
         savefig(hObj,hObj.FileName);
+        
+        rcfg = [];
+        rcfg.outputfile = hObj.UserData.ffnOut;
+        rcfg.component = find(hObj.UserData.compToBeRejected);
+        ft_rejectcomponent(rcfg,hObj.UserData.comp);
+        
         fprintf(' done\n')
         hObj.Pointer = 'hand'; drawnow
         delete(hObj);
