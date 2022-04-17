@@ -281,13 +281,17 @@ for i = 1:length(d)
         continue
     end
     
+    % create placeholder ffnFig
+    f = figure('WindowState','Maximized');
+    savefig(f,ffnFig);
+
+    
     fprintf('\n%d/%d. Loading components data from "%s" ...',i,length(d),d(i).name)
     load(ffn,'comp');
     fprintf(' done\n')
     
     cfg.component = 1:length(comp.label);
     
-    f = figure('WindowState','Maximized');
     
     ft_warning off FieldTrip:getdimord:warning_dimord_could_not_be_determined
     ft_topoplotIC(cfg,comp)
