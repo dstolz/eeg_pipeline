@@ -301,12 +301,14 @@ for i = 1:length(d)
     
     f.CloseRequestFcn = @gui_clean_components;
     f.Name = d(i).name;
+    f.Tag = 'TOPO';
     f.Pointer = 'hand';
     
     f.UserData.compToBeRejected = false(size(ax));
     f.UserData.cfg = cfg;
     f.UserData.comp = comp;
     f.UserData.compcfg = comp.cfg;
+    f.UserData.ffnTopoFig = ffnFig;
     f.UserData.ffnOut = ffnOut;
     f.UserData.TimeStamp = now;
     
@@ -321,37 +323,14 @@ end
 
 
 %% 3C. REJECT ARTIFACTUAL COMPONENTS
-eeg_preamble
 
-randomizeOrder = true;
+showAll = false; % if false, show only unprocessed data
 
-pthFig = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
 
-d = dir(fullfile(pthFig,'*.fig'));
+topoFigPath = fullfile(outPathRoot,'MERGED_COMP_TOPOFIG');
+cleanPath  = fullfile(outPathRoot,'MERGED_CLEAN');
 
-if randomizeOrder
-    d = d(randperm(length(d)));
-end
-
-set(groot,'defaultAxesToolbarVisible','off')
-
-for i = 1:length(d)
-    fprintf('%d/%d. "%s"\n',i,length(d),d(i).name)
-    
-    ffnFig = fullfile(d(i).folder,d(i).name);
-    
-    f = openfig(ffnFig,'invisible');
-    
-    if skipCompleted && exist(f.UserData.ffnOut,'file')
-        fprintf(2,'\tCleaned file already exists, skippping: %s\n',fnOut)
-        continue
-    end
-    
-    f.Visible = 'on';
-    waitfor(f);
-end
-
-set(groot,'defaultAxesToolbarVisible','on')
+gui_clean_components(topoFigPath,cleanPath,showAll)
 
 
 

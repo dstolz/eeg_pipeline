@@ -1,74 +1,157 @@
 function gui_toggle_component(hObj,event)
 
+global CLEAN_SELECTMODE
+
+persistent PREVIOUS_ID
+
+flags.process = true;
+
+
 axCurrent = ancestor(hObj,'axes');
-if isempty(axCurrent)
-    fTopo = hObj;
-    create_fig(fTopo);
-    id = [];
-else
-    fTopo = axCurrent.Parent;
+if isa(hObj,'matlab.graphics.primitive.Line')
+    ID = hObj.UserData;
+    ft = ancestor(hObj,'figure');
+    fTopo = ft.UserData.fTopo;
+    ax = findobj(fTopo,'type','axes');
+    axIDs = arrayfun(@(a) str2double(a.Title.String(find(a.Title.String==' ')+1:end)),ax);
+    axCurrent = ax(axIDs == ID);
+    
+elseif isa(hObj,'matlab.graphics.axis.Axes') || ~isempty(axCurrent) && startsWith(axCurrent.Title.String,'component')
     tstr = axCurrent.Title.String;
     tstr(1:find(tstr==' ')) = [];
-    id = str2double(tstr);    
-end
+    ID = str2double(tstr);
+    fTopo = ancestor(hObj,'figure');
+    ax = findobj(fTopo,'type','axes');
+    axIDs = arrayfun(@(a) str2double(a.Title.String(find(a.Title.String==' ')+1:end)),ax);
+    
 
-
-ind = fTopo.UserData.compToBeRejected;
-
-
-
-if ~isempty(id)
-    % false == "accept"; true == "reject"
-    ind(id) = ~ind(id);
-end
-
-fTopo.UserData.compToBeRejected = ind;
-
-
-if ind(id)
-    axCurrent.Title.Color = 'r';
+elseif isa(hObj,'matlab.ui.Figure') && isvalid(hObj) && isequal(hObj.Tag,'CLEANING')
+    ID = [];
+    fTopo = findobj('type','figure','-and','tag','TOPO');
+elseif isa(hObj,'matlab.ui.Figure') && isvalid(hObj) %&& isequal(hObj.Tag,'TOPO')
+    ID = [];
+    fTopo = hObj;
 else
-    axCurrent.Title.Color = 'k';
+    return
 end
-
-
-
-sgtitle(fTopo,sprintf('%d components marked',sum(ind)))
 
 ft = findobj('type','figure','-and','Name','cleaning');
 if isempty(ft)
-    create_fig(fTopo);
+    ft = create_fig(fTopo);
 end
 
 
-idx = find(ind);
-cfg = [];
-cfg.component = idx;
+sgtitle(ft,'updating ...')
+sgtitle(fTopo,'updating...')
+ft.Pointer = 'watch';
+fTopo.Pointer = 'watch';
+drawnow
 
-ax1 = fTopo.UserData.compPlotAxes;
 
-arrayfun(@(a,b) set(a,'Color',b{1}),ax1.Children,ft.UserData.origCompColor);
-set(ax1.Children(flipud(ind)),'color',[.8 .8 .8]);
+indRej = fTopo.UserData.compToBeRejected;
 
-if isempty(ax1.Children)
+if isempty(CLEAN_SELECTMODE), CLEAN_SELECTMODE = "none"; end
+
+if startsWith(CLEAN_SELECTMODE,"range") && ~isempty(PREVIOUS_ID)
+    if ID > PREVIOUS_ID
+        ID = PREVIOUS_ID:ID;
+    else
+        ID = ID:PREVIOUS_ID;
+    end
+    
+else
+    PREVIOUS_ID = ID;
+end
+
+if ~isempty(ID)
+    % false == "accept"; true == "reject"
+    if endsWith(CLEAN_SELECTMODE,"uniform")
+        indRej(ID) = ~indRej(PREVIOUS_ID);
+        
+    elseif CLEAN_SELECTMODE == "defer"
+        indRej(ID) = ~indRej(ID);
+        flags.process = false;
+        
+    elseif CLEAN_SELECTMODE == "process"
+        indRej(ID) = ~indRej(ID);
+        CLEAN_SELECTMODE = "none";
+        flags.process = true;
+        
+    else
+        indRej(ID) = ~indRej(ID);
+    end
+end
+
+
+fTopo.UserData.compToBeRejected = indRej;
+
+
+xindRej = flipud(indRej);
+for i = 1:length(xindRej)
+    if xindRej(i)
+        ax(i).Title.Color = 'r';
+    else
+        ax(i).Title.Color = 'k';
+    end
+end
+
+
+
+
+
+
+axComponents = fTopo.UserData.compPlotAxes;
+
+h = fTopo.UserData.compLines;
+for i = 1:length(h)
+    if indRej(i)
+        h(i).Color = [.8 .8 .8];
+    else
+        h(i).Color = fTopo.UserData.origCompColor(i,:);
+    end
+end
+
+if isempty(axComponents.Children)
     xm = fTopo.UserData.comp.time{1}([1 end]);
 else
-    xm = xlim(ax1);
+    xm = xlim(axComponents);
 end
-xlim(ax1,xm);
+xlim(axComponents,xm);
 
-% update line data
-data = ft_rejectcomponent(cfg,fTopo.UserData.comp);
 
-y = data.trial{1}./max(abs(data.trial{1}),[],2);
-y = (1:size(data.trial{1},1))' + y;
 
-h = fTopo.UserData.dataLines;
-for i = 1:length(h)
-    h(i).YData = y(i,:);
+if flags.process
+    cfg = [];
+    cfg.component = find(indRej);
+    data = ft_rejectcomponent(cfg,fTopo.UserData.comp);
+    
+    y = data.trial{1}./max(abs(data.trial{1}),[],2);
+    y = (1:size(data.trial{1},1))' + y;
+    
+    h = fTopo.UserData.dataLines;
+    for i = 1:length(h)
+        h(i).YData = y(i,:);
+        h(i).Color = fTopo.UserData.origDataColor{i};
+    end
+else
+    set(fTopo.UserData.dataLines,'Color',[.8 .8 .8]);
 end
 
+
+nRej = sum(indRej);
+if CLEAN_SELECTMODE == "defer"
+    sgstr = sprintf('%d components waiting to be updated ...',nRej);
+    sgclr = "#ffa500";
+else
+    sgstr = sprintf('%d components marked',nRej);
+    sgclr = 'k';
+end
+sgtitle(fTopo,sgstr,'Color',sgclr);
+sgtitle(ft,sgstr,'Color',sgclr);
+
+ft.Pointer = 'arrow';
 fTopo.Pointer = 'hand';
+
 drawnow
 
 
@@ -80,28 +163,43 @@ f = figure('name','cleaning','color','w');
 
 ax = subplot(121,'parent',f);
 ax.Tag = 'comp';
-ax.YDir = 'reverse';
 fTopo.UserData.compPlotAxes = ax;
 
 ax = subplot(122,'parent',f);
 ax.Tag = 'data';
-ax.YDir = 'reverse';
 fTopo.UserData.dataPlotAxes = ax;
 
 movegui(f,'onscreen');
 
-% only need to plot ocmponents once since they don't change
+
+
+
+
 ax1 = fTopo.UserData.compPlotAxes;
 
 y = fTopo.UserData.comp.trial{1}./max(abs(fTopo.UserData.comp.trial{1}),[],2);
-y = (1:size(fTopo.UserData.comp.trial{1},1))' + y;
-plot(ax1,fTopo.UserData.comp.time{1},y');
-f.UserData.origCompColor = get(ax1.Children,'Color');
+
+cm = prism(size(y,1));
+for i = 1:size(y,1)
+    h(i) = line(ax1,fTopo.UserData.comp.time{1},i+y(i,:), ...
+        'color',cm(i,:),'UserData',i);
+end
+set(h,'ButtonDownFcn',@gui_toggle_component);
+f.UserData.fTopo = fTopo;
+fTopo.UserData.figTime = f;
+fTopo.UserData.compLines = h;
+fTopo.UserData.origCompColor = cm;
 
 axis(ax1,'tight');
 grid(ax1,'on');
 xlabel(ax1,'time (s)');
 ylabel(ax1,'component #');
+box(ax1,'on');
+
+ax1.YTick = 5:5:length(h);
+ylim(ax1,[0 max(ylim(ax1))]);
+
+
 
 
 
@@ -110,19 +208,15 @@ ax2 = fTopo.UserData.dataPlotAxes;
 data = ft_rejectcomponent(cfg,fTopo.UserData.comp);
 
 y = data.trial{1}./max(abs(data.trial{1}),[],2);
-y = (1:size(data.trial{1},1))' + y;
 
 for i = 1:size(y,1)
-    h(i) = line(ax2,data.time{1},y(i,:));
+    h(i) = line(ax2,data.time{1},i+y(i,:),'UserData',i);
 end
 fTopo.UserData.dataLines = h;
+fTopo.UserData.origDataColor = get(h,'Color');
 
 
-if isempty(ax1.Children)
-    xm = fTopo.UserData.comp.time{1}([1 end]);
-else
-    xm = xlim(ax1);
-end
+xm = fTopo.UserData.comp.time{1}([1 end]);
 xlim(ax1,xm);
 
 axis(ax2,'tight');
@@ -130,9 +224,22 @@ xlim(ax2,xm);
 grid(ax2,'on');
 xlabel(ax2,'time (s)');
 ylabel(ax2,'channel');
+box(ax2,'on');
 
-zoom(ax2.Parent,'xon');
+ax2.YTick = 5:5:length(h);
+ylim(ax2,[0 max(ylim(ax2))]);
+
 
 linkaxes([ax1 ax2],'x');
+
+
+
+f.WindowKeyPressFcn     = @comp_gui_keyprocessor;
+f.WindowKeyReleaseFcn   = @comp_gui_keyprocessor;
+fTopo.WindowKeyPressFcn = @comp_gui_keyprocessor; 
+fTopo.WindowKeyReleaseFcn = @comp_gui_keyprocessor;
+
+f.Tag = 'CLEANING';
+fTopo.Tag = 'TOPO';
 
 
