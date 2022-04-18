@@ -1,6 +1,6 @@
 function gui_clean_components(hObj,event,showall)
 
-if nargin < 3 || isempty(showall), showall = true; end
+if nargin < 3 || isempty(showall), showall = false; end
 
 if nargin >= 2 && ischar(hObj) && ischar(event) % path names
     figPath = hObj;
