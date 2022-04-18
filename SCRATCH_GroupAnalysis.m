@@ -4,7 +4,7 @@
 % compressed sentences. ACT means that the participant is receiving training 
 % on recognizing sentences in noise.
 
-modelPathRoot = 'L:\Users\dstolz\EEGData\';
+modelPathRoot = 'L:\Users\dstolz\EEGData_32\';
 
 
 ForegroundOrBackground = "Foreground";
@@ -46,6 +46,7 @@ load(ffn,'model');
 subjIdx = 1;
 trainIdx = 4;
 
+badIdx = [];
 for i = 1:length(model)
     [~,fnEEG,~] = fileparts(model{i}.fnEEG);
     x = split(fnEEG,'_');
@@ -62,14 +63,21 @@ for i = 1:length(model)
     model{i}.Train   = SD(ind).Train;
     model{i}.status  = SD(ind).status;
     model{i}.TCcond  = x(trainIdx);
+    
+    if ~isfield(model{i},'w')
+        badIdx = [badIdx, i];
+    end
 end
-
+model(badIdx) = [];
 
 Data = cell2mat(model);
 
 
 %
 f = figure(9999);
+clf(f)
+set(f,'color','w');
+hold on
 indBase = [Data.status] == "OK" & ~[Data.MCI];
 for i = 1:length(uSD.Train) % "ACT" or "EXP"
     for j = 1:length(uSD.Age)
@@ -77,17 +85,29 @@ for i = 1:length(uSD.Train) % "ACT" or "EXP"
             & [Data.Train] == uSD.Train(i) ...
             & [Data.Age] == uSD.Age(j);
         
-        fprintf('Age = "%s", Train = "%s"; Found %d\n',uSD.Age(j),uSD.Train(i),sum(ind))
         
         if ~any(ind), continue; end
+        
+        str = sprintf('%s,%s,n=%d', ...
+            uSD.Age(j),uSD.Train(i),sum(ind));
         
         w = {Data(ind).w};
         
         w = cellfun(@(a) mean(a,3),w,'uni',0);
         w = cell2mat(w');
+        mw = mean(w,1);
+        
+        t = model{find(ind,1)}.t;
+        
+        plot(t,mw,'DisplayName',str);
     end
 end
-
+hold off
+legend
+axis tight
+box on
+grid on
+xlabel('time (ms)')
 
 
 

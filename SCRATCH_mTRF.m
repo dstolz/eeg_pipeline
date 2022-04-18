@@ -1,5 +1,5 @@
 %% REQUIRED
-outPathRoot = 'L:\Users\dstolz\EEGData\';
+outPathRoot = 'L:\Users\dstolz\EEGData_32\';
 pthStimulusDir = 'L:\Users\dstolz\Stimuli Concatenated (10 minutes)\Saved Concatenated Files';
 
 
