@@ -54,9 +54,9 @@ if isempty(CLEAN_SELECTMODE), CLEAN_SELECTMODE = "none"; end
 
 if startsWith(CLEAN_SELECTMODE,"range") && ~isempty(PREVIOUS_ID)
     if ID > PREVIOUS_ID
-        ID = PREVIOUS_ID:ID;
+        ID = PREVIOUS_ID+1:ID;
     else
-        ID = ID:PREVIOUS_ID;
+        ID = ID:PREVIOUS_ID-1;
     end
     
 else
@@ -186,7 +186,7 @@ for i = 1:size(y,1)
 end
 set(h,'ButtonDownFcn',@gui_toggle_component);
 f.UserData.fTopo = fTopo;
-fTopo.UserData.figTime = f;
+
 fTopo.UserData.compLines = h;
 fTopo.UserData.origCompColor = cm;
 
