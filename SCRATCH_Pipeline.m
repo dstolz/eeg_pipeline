@@ -230,7 +230,7 @@ for i = 1:length(d)
     
     
     if skipCompleted && exist(ffnOut,'file')
-        fprintf(2,'\tFile already exists, skippping: %s\n',fnOut)
+        fprintf(2,'File already exists, skippping: %s\n',fnOut)
         continue
     end
     
