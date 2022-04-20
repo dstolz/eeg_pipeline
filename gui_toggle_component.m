@@ -242,4 +242,9 @@ fTopo.WindowKeyReleaseFcn = @comp_gui_keyprocessor;
 f.Tag = 'CLEANING';
 fTopo.Tag = 'TOPO';
 
-
+% doing this constrains mouse scroll wheel to horizontal scrolling which is
+% what we probably want for the time-domain plots
+ZOOM_MODE = zoom(f);
+ZOOM_MODE.Motion = 'horizontal';
+ZOOM_MODE.Enable = 'on'; drawnow
+ZOOM_MODE.Enable = 'off'; drawnow
