@@ -8,10 +8,6 @@ M = event.Modifier;
 
 hManager = uigetmodemanager(hObj);
 
-if isequal(event.EventName,'WindowKeyRelease') && CLEAN_SELECTMODE == "defer"
-        CLEAN_SELECTMODE = "process";
-        gui_toggle_component(ancestor(hObj,'figure'));
-end
 
 
 switch event.Character
@@ -31,6 +27,12 @@ switch event.Character
 end
 
 
+if isequal(event.EventName,'WindowKeyRelease') ...
+        && CLEAN_SELECTMODE == "defer" ...
+        && ~isequal(M,{'shift'})
+        CLEAN_SELECTMODE = "process";
+        gui_toggle_component(ancestor(hObj,'figure'));
+end
 
 if isequal(M,{'shift'})
     if isequal(event.EventName,'WindowKeyPress')
@@ -61,6 +63,8 @@ elseif isequal(M,{'control'})
                 else
                     ZOOM_MODE.Enable = 'off';
                 end
+                
+            
         end
     end
     
