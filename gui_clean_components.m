@@ -42,8 +42,11 @@ switch r
         rcfg.component = find(hObj.UserData.compToBeRejected);
         ft_rejectcomponent(rcfg,hObj.UserData.comp);
         
+        ind = structfun(@(a) any(ishandle(a(:))),hObj.UserData);
+        fn = fieldnames(hObj.UserData);
+        hObj.UserData = rmfield(hObj.UserData,fn(ind));
         savefig(hObj,hObj.FileName);
-        
+            
         fprintf(' done\n')
         
         delete(ft);
