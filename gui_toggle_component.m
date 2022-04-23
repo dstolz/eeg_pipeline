@@ -1,6 +1,6 @@
 function gui_toggle_component(hObj,event)
 
-global CLEAN_SELECTMODE
+global CLEAN_SELECTMODE % USED BY OTHER FUNCTIONS TO COMMUNICATE SELECTION MODE
 
 persistent PREVIOUS_ID
 
