@@ -1,6 +1,6 @@
 function gui_toggle_component(hObj,event)
 
-global CLEAN_SELECTMODE % USED BY OTHER FUNCTIONS TO COMMUNICATE SELECTION MODE
+global CLEAN_SELECTMODE CLIM_MODE % USED BY OTHER FUNCTIONS TO COMMUNICATE SELECTION MODE
 
 persistent PREVIOUS_ID
 
@@ -21,9 +21,6 @@ elseif isa(hObj,'matlab.graphics.axis.Axes') || ~isempty(axCurrent) && startsWit
     tstr(1:find(tstr==' ')) = [];
     ID = str2double(tstr);
     fTopo = ancestor(hObj,'figure');
-    ax = findobj(fTopo,'type','axes');
-    axIDs = arrayfun(@(a) str2double(a.Title.String(find(a.Title.String==' ')+1:end)),ax);
-    
 
 elseif isa(hObj,'matlab.ui.Figure') && isvalid(hObj) && isequal(hObj.Tag,'CLEANING')
     ID = [];
@@ -31,9 +28,15 @@ elseif isa(hObj,'matlab.ui.Figure') && isvalid(hObj) && isequal(hObj.Tag,'CLEANI
 elseif isa(hObj,'matlab.ui.Figure') && isvalid(hObj) %&& isequal(hObj.Tag,'TOPO')
     ID = [];
     fTopo = hObj;
+
 else
     return
 end
+
+
+ax = findobj(fTopo,'type','axes');
+axIDs = arrayfun(@(a) str2double(a.Title.String(find(a.Title.String==' ')+1:end)),ax);
+
 
 ft = findobj('type','figure','-and','Name','cleaning');
 if isempty(ft)
@@ -71,6 +74,10 @@ if ~isempty(ID)
     elseif CLEAN_SELECTMODE == "defer"
         indRej(ID) = ~indRej(ID);
         flags.process = false;
+        
+    elseif CLEAN_SELECTMODE == "range"
+        CLEAN_SELECTMODE = "none";
+        indRej(ID) = ~indRej(ID);
         
     elseif CLEAN_SELECTMODE == "process"
         indRej(ID) = ~indRej(ID);
@@ -148,6 +155,17 @@ else
 end
 sgtitle(fTopo,sgstr,'Color',sgclr);
 sgtitle(ft,sgstr,'Color',sgclr);
+
+
+if ~isempty(CLIM_MODE) && CLIM_MODE == "excluded"
+    ax = findobj(fTopo,'type','axes');
+    ind = fTopo.UserData.compToBeRejected;
+    set(ax,'climmode','auto')
+    c = cell2mat(get(ax(~ind),'clim'));
+    pd = fitdist(c(:),'logistic');
+    nc = pd.icdf([.1 0.9]);
+    set(ax,'clim',nc)
+end
 
 ft.Pointer = 'arrow';
 fTopo.Pointer = 'hand';
@@ -248,3 +266,6 @@ ZOOM_MODE = zoom(f);
 ZOOM_MODE.Motion = 'horizontal';
 ZOOM_MODE.Enable = 'on'; drawnow
 ZOOM_MODE.Enable = 'off'; drawnow
+
+
+
