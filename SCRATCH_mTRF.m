@@ -10,18 +10,24 @@ ForegroundOrBackground = "Foreground";
 % dataSuffix = 'DSS';
 dataSuffix = 'CLEAN';
 
-% modelDirection = 1; % 1: forward model; -1: backwards model
-modelDirection = -1; % 1: forward model; -1: backwards model
+ % 1: forward model; -1: backwards model
+modelDirection = 1;
+% modelDirection = -1;
 
-modelWindow = [-100 400]; % ms
-% modelSplits = 1; %80;
-modelSplits = 12;
+modelWindow = [-150 450]; % ms
 
 
-crossvalLambdas = logspace(0,7,16);
+metricForLamda = "r"; % maximum Pearson's correlation coefficient
+% metricForLamda = "mse"; % minimum mean squared error
 
-modelLambda = 0.1; % regularization parameter
-modelFactor = 1;%0.0313;
+crossvalLambdas = 10.^(linspace(-6,6,16));
+
+crossvalNFold = 50;
+predictTestFold = round(crossvalNFold/2);
+
+
+
+
 
 d = dir(fullfile(pthStimulusDir,'**\*.wav'));
 fnWav = {d.name}';
@@ -47,7 +53,7 @@ tokEEG.Pool = 7; % Pool character is suffix to "Pool"
 model = cell(size(cEEG));
 
 % match data filenames with corresponding wav filenames
-for i = 1:length(cEEG)
+for i = 13 %1:length(cEEG)
     clear M
 
     try
@@ -98,6 +104,17 @@ for i = 1:length(cEEG)
         end
         fprintf(' done\n')
         
+        
+        
+        
+        
+        % normalize response
+        resp = resp ./ std(resp(:));
+        
+        
+        
+        
+        % handle the stimulus
         fprintf('Loading "%s" ...',fnWAVcur)
         [stim,wavFs] = audioread(ffnWav{ind});
         fprintf(' done\n')
@@ -113,6 +130,9 @@ for i = 1:length(cEEG)
             stim(end-adj+1:end) = [];
         end
         
+        
+        
+        % store some infor along with the model
         M.label = data.label;
         M.fsample = data.fsample;
         
@@ -121,37 +141,66 @@ for i = 1:length(cEEG)
         M.layoutFile = 'biosemi64.lay';
         M.layout = ft_prepare_layout(cfg);
         
-        n = length(crossvalLambdas);
-        for j = 1:n
-            fprintf('%d/%d.\tLambda = %.E\n',j,n,crossvalLambdas(j))
-            M.crossval(j).result = mTRFcrossval(stim,resp.*modelFactor,Fs,modelDirection,0,modelWindow(2),crossvalLambdas(j),'verbose',0,'split',modelSplits);
-            M.crossval(j).Ravg   = mean(M.crossval(j).result.r,'all');
-            M.crossval(j).MSEavg = mean(M.crossval(j).result.err,'all');
-            M.crossval(j).lambda = crossvalLambdas(j);
+        
+        
+        
+        
+        
+        
+        % generate random crossval, training, and prediction subsets
+        
+        % Generate training/test sets
+        [stimtrain,resptrain,stimtest,resptest] = mTRFpartition(stim,resp,crossvalNFold,predictTestFold);
+
+        
+        
+        % Crossvalidation
+        % Model hyperparameters
+        % Run fast cross-validation
+        M.crossval = mTRFcrossval(stimtrain,resptrain,Fs,modelDirection,0,modelWindow(2),crossvalLambdas,...
+            'zeropad',0,'fast',1);
+        
+        
+        
+        
+        
+        
+        % Estimate optimal hyperparameters
+        M.crossval.Ravg = mean(M.crossval.r,1);
+        [M.crossvalRavgVal,M.crossvalRavgIdx] = max(M.crossval.Ravg,[],2);
+        
+        M.crossval.MSEavg = mean(M.crossval.err,1);
+        [M.crossvalMSEavgVal,M.crossvalMSEavgIdx] = min(mean(M.crossval.err,1),[],2);
+        
+        
+        switch lower(metricForLamda)
+            case "r"
+                M.predictLambda = crossvalLambdas(M.crossvalRavgIdx);
+            case "mse"
+                M.predictLambda = crossvalLambdas(M.crossvalMSEavgIdx);
         end
-        [v,k] = max([M.crossval.Ravg]);
-        M.crossvalRavgIdx = k;
-        M.crossvalRavgVal = v;
         
-        [v,k] = min([M.crossval.MSEavg]);
-        M.crossvalMSEavgIdx = k;
-        M.crossvalMSEavgVal = v;
         
-%         M.predictLambda = crossvalLambdas(M.crossvalRavgIdx);
-        M.predictLambda = crossvalLambdas(M.crossvalMSEavgIdx);
         
-        M.train = mTRFtrain(stim,resp.*modelFactor,Fs,modelDirection,modelWindow(1),modelWindow(2),M.predictLambda,'split',modelSplits);
+        
+        
+        
+        % Train model
+        M.train = mTRFtrain(stimtrain,resptrain,Fs,modelDirection,modelWindow(1),modelWindow(2),M.predictLambda,'zeropad',0);
         M.train.GFP = var(M.train.w,[],[1 3]); % global field power
         
         
-        [M.predict,M.predictStats] = mTRFpredict(stim,resp.*modelFactor,M.train);%,'split',modelSplits);
+        
+        
+        % Predict
+        [M.predict,M.predictStats] = mTRFpredict(stimtest,resptest,M.train,'zeropad',0);
         
         
         
         clf
-        subplot(221)
-        line(crossvalLambdas,[M.crossval.Ravg],'color','b','marker','o');
-        line(crossvalLambdas(M.crossvalRavgIdx),M.crossvalRavgVal,'color','b','marker','o','markerfacecolor','b');
+        subplot(321)
+        line(crossvalLambdas,squeeze(M.crossval.Ravg),'color','b','marker','o');
+        line(crossvalLambdas(squeeze(M.crossvalRavgIdx)),squeeze(M.crossvalRavgVal),'color','b','marker','o','markerfacecolor','b');
         set(gca,'xscale','log')
         ylabel('Pearson''s r')
         xlabel('\lambda')
@@ -159,10 +208,9 @@ for i = 1:length(cEEG)
         box on
         grid on
         
-        subplot(222)
-        
-        line(crossvalLambdas,[M.crossval.MSEavg],'color','r','marker','o');
-        line(crossvalLambdas(M.crossvalMSEavgIdx),M.crossvalMSEavgVal,'color','r','marker','o','markerfacecolor','r');
+        subplot(322)
+        line(crossvalLambdas,squeeze(M.crossval.MSEavg),'color','r','marker','o');
+        line(crossvalLambdas(squeeze(M.crossvalMSEavgIdx)),squeeze(M.crossvalMSEavgVal),'color','r','marker','o','markerfacecolor','r');
         set(gca,'xscale','log')
         ylabel('MSE')
         xlabel('\lambda')
@@ -171,24 +219,23 @@ for i = 1:length(cEEG)
         grid on
         
         if modelDirection > 0
-            subplot(223)
+            subplot(323)
             quick_topoplot(M.layout,mean(M.predictStats.r,1),M.label,true);
             h = colorbar;
             h.Label.String = 'Pearson''s r';
             
-            subplot(224)
+            subplot(324)
             quick_topoplot(M.layout,mean(M.predictStats.err,1),M.label,true);
             h = colorbar;
             h.Label.String = 'MSE';
-        else
-            subplot(2,2,[3 4])
-            plot(M.train.t,M.train.GFP,'-','linewidth',2);
-            axis tight
-            grid on
-            xline(0)
-            xlabel('time (ms)');
-            ylabel('GFP (a.u.)');
         end
+        subplot(3,2,[5 6])
+        plot(M.train.t,M.train.GFP,'-','linewidth',2);
+        axis tight
+        grid on
+        xline(0)
+        xlabel('time (ms)');
+        ylabel('GFP (a.u.)');
         
         sgtitle({M.fnEEG,M.fnWAV},'Interpreter','none');
 
@@ -208,6 +255,7 @@ if any(e)
     fprintf('Finished with %d Errors!\n',sum(e))
 end
 
+%%
 fn = sprintf('mTRF_%s_%s_model_%d.mat',ForegroundOrBackground,dataSuffix,modelDirection);
 ffn = fullfile(outPathRoot,fn);
 fprintf('Saving "%s" ...',ffn)
