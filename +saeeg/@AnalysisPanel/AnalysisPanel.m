@@ -85,16 +85,16 @@ classdef AnalysisPanel < saeeg.GUIComponent
             
             h = obj.hAnalysisDropdown;
             
-            
             fh = ancestor(h,'figure');
+            fhap = fh.Pointer;
             fh.Pointer = 'watch'; drawnow
             
             if isempty(obj.DataType)
                 h.Enable = 'off';
                 obj.hStateButton.Enable = 'off';
+                fh.Pointer = fhap;
                 return
             end
-            
             
             [va,vafcn] = obj.MasterObj.get_valid_analyses(obj.DataType);
             
@@ -107,7 +107,7 @@ classdef AnalysisPanel < saeeg.GUIComponent
             obj.update_current_analysis;
             
             
-            fh.Pointer = 'arrow';
+            fh.Pointer = fhap;
         end
         
         
