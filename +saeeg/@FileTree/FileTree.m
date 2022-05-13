@@ -14,10 +14,7 @@ classdef FileTree < saeeg.GUIComponent
         hOutputPath
     end
     
-    properties (Dependent)
-        subdirs
-        filelist
-        
+    properties (Dependent)        
         SelectedFiles
         NSelected
     end
@@ -47,30 +44,38 @@ classdef FileTree < saeeg.GUIComponent
             obj.hGridLayout = g;
             
             
-            h = uilabel(g);
+            h = uibutton(g);
             h.Layout.Row = 1;
             h.Layout.Column = 1;
+            h.Tag = 'DataRoot';
             h.Text = 'Data Root:';
+            h.ButtonPushedFcn = @obj.select_pathfield;
+            h.Tooltip = 'Click to select DataRoot path';
             h.HorizontalAlignment = 'right';
             
             h = uieditfield(g);
             h.Layout.Row = 1;
             h.Layout.Column = 2;
+            h.Tag = 'DataRoot';
             h.Value = obj.MasterObj.DataRoot;
             h.ValueChangedFcn = @obj.path_updated;
             h.Enable = 'off';
             obj.hDataRoot = h;
             
             
-            h = uilabel(g);
+            h = uibutton(g);
             h.Layout.Row = 2;
             h.Layout.Column = 1;
+            h.Tag = 'OutputPath';
             h.Text = 'Output Path:';
+            h.ButtonPushedFcn = @obj.select_pathfield;
+            h.Tooltip = 'Click to select OutputPath';
             h.HorizontalAlignment = 'right';
             
             h = uieditfield(g);
             h.Layout.Row = 2;
             h.Layout.Column = 2;
+            h.Tag = 'OutputPath';
             h.Value = obj.MasterObj.OutputPath;
             h.ValueChangedFcn = @obj.path_updated;
             h.Enable = 'off';
@@ -97,8 +102,7 @@ classdef FileTree < saeeg.GUIComponent
             
             % not sure why the caller function has to be specified in the
             % @(src,event)... format here?
-            addlistener(obj.MasterObj,'DataRoot','PostSet',@(src,event) obj.tree_selection_updated(src,event));
-            
+            addlistener(obj.MasterObj,'DataRoot','PostSet',@obj.populate_filetree);
             addlistener(obj.MasterObj,'AnalysisState','PostSet',@obj.analysis_state);
         end
         
@@ -112,45 +116,103 @@ classdef FileTree < saeeg.GUIComponent
         
         
         
-        function populate_filetree(obj)
+        function populate_filetree(obj,src,event)
             obj.hFileTree.Enable = 'off';
-            a = ancestor(obj.hFileTree,'figure');
-            a.Pointer = 'watch'; drawnow
+            ha = ancestor(obj.hFileTree,'figure');
+            hap = ha.Pointer; % original pointer
+            ha.Pointer = 'watch'; drawnow
+            
             delete(obj.hFileNode);
             delete(obj.hDirNode);
-            obj.hFileNode = [];
-            obj.hDirNode = [];
+            
+            saeeg.vprintf(1,'Searching for files under DataRoot: "%s"',obj.MasterObj.DataRoot);
+            d = dir(obj.MasterObj.DataRoot);
+            d(startsWith({d.name},'.')|startsWith({d.name},'+')) = [];
+            df = cellfun(@fullfile,{d.folder},{d.name},'uni',0);
+            
+            a = cellfun(@(a) dir(fullfile(a,'**/*')),df,'uni',0);
 
+%             obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(d),sum(cellfun(@numel,s))); drawnow
+            [~,DirM] = ipticondir;
+            iconFolder = fullfile(DirM,'foldericon.gif');
+            iconFile = fullfile(DirM,'file_new.png');
             
-            d = obj.subdirs;
-            s = obj.filelist;
+            s = sum(cellfun(@(a) sum([a.isdir]),a));
+            obj.hDirNode = gobjects(s,1);
+            s = sum(cellfun(@(a) sum(~[a.isdir]),a));
+            obj.hFileNode = gobjects(s,1);
             
-            obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(d),sum(cellfun(@numel,s))); drawnow
-            
-            for i = 1:length(d)
-                h = uitreenode(obj.hFileTree,'Text',d{i});
-                obj.hDirNode(i) = h;
-                for j = 1:length(s{i})
-                    obj.hFileNode(j) = uitreenode(h,'Text',s{i}{j},'NodeData',fullfile(obj.MasterObj.DataRoot,d{i},s{i}{j}));
+            kDir = 1;
+            kFile = 1;
+            for i = 1:length(a)
+                
+                fn = {a{i}.name};
+                ind = startsWith(fn,'.')|startsWith(fn,'+'); % ignore directories with '.' or '+' prefix
+                a{i}(ind) = [];
+                fn(ind) = [];
+                ffn = cellfun(@fullfile,{a{i}.folder},fn,'uni',0);
+
+                aisdir = [a{i}.isdir];
+                
+                saeeg.vprintf(4,'FileTree: Adding main dir: "%s"',df{i})
+                h = uitreenode(obj.hFileTree,'Text',d(i).name, ...
+                    'NodeData',df{i}, ...
+                    'UserData',ffn(~aisdir), ...
+                    'Icon',iconFolder);
+                obj.hDirNode(kDir) = h;
+                kDir = kDir + 1;
+                
+
+                for j = 1:length(ffn)
+                    if aisdir(j)
+                        saeeg.vprintf(4,'FileTree: Adding dir: "%s"',ffn{j})
+                        ind = startsWith(ffn,ffn(j)) & ~aisdir;
+                        obj.hDirNode(kDir) = uitreenode(h, ...
+                            'Text',fn{j}, ...
+                            'NodeData',ffn{j}, ...
+                            'UserData',ffn(ind), ...
+                            'Icon',iconFolder);
+                        kDir = kDir + 1;
+                    else
+                        nd = get(obj.hDirNode(1:kDir-1),'NodeData');
+                        ind = ismember(nd,{a{i}(j).folder});
+                        saeeg.vprintf(4,'FileTree: Adding file: "%s" under: "%s"',ffn{j},obj.hDirNode(ind).NodeData)
+                        obj.hFileNode(kFile) = uitreenode(obj.hDirNode(ind), ...
+                            'Text',fn{j},'NodeData',ffn{j}, ...
+                            'Icon',iconFile);
+                        kFile = kFile + 1;
+                    end
                 end
             end
             
             obj.hFileTree.Enable = 'on';
-            a.Pointer = 'arrow'; drawnow
+            ha.Pointer = hap; drawnow
         end
         
         
+        function select_pathfield(obj,src,event)
+            p = obj.MasterObj.(src.Tag);
+            d = uigetdir(p,sprintf('Select %s',src.Tag));
+            figure(ancestor(src,'figure'));
+            if isequal(d,0), return; end
+            obj.path_updated(src,d);
+        end
+        
         
         function path_updated(obj,src,event)
-            
-            try
-                obj.MasterObj.OutputPath = src.Value;
-                obj.MasterObj.field_indicator(src,'a');
-            catch me
-                obj.hOutputPath.Value = src;
-                obj.MasterObj.field_indicator(src,'r');
+            if isequal(src.Type,'uibutton')
+                % redirect to text field; event is new path
+                src = obj.(sprintf('h%s',src.Tag));
+                src.Value = event;
             end
             
+            try
+                obj.MasterObj.(src.Tag) = src.Value;
+                obj.MasterObj.field_indicator(src,'a');
+            catch me
+                obj.MasterObj.field_indicator(src,'r');
+                saeeg.vprintf(0,1,'Invalid path');
+            end
         end
         
         
@@ -159,29 +221,15 @@ classdef FileTree < saeeg.GUIComponent
             
             sn = obj.hFileTree.SelectedNodes;
             if isempty(sn), return; end
-
-            ind = ~cellfun(@isempty,{sn.NodeData});
-            if all(ind) % individual files selected
-                
-                snc = sn;
-                
-            else % subdir selected - select all files
-                
-                collapse(obj.hFileTree,'all')
-                
-                arrayfun(@expand,sn);
-                
-                snc = sn.Children;
-                if isempty(snc), return; end
-                
-                n = cellfun(@transpose,{snc},'uni',0);
-                obj.hFileTree.SelectedNodes = [n{:}];
-                
-            end
+            h = findobj(sn,'type','uitreenode');
+            collapse(obj.hFileTree,'all')
+            arrayfun(@expand,h);
+            ind = arrayfun(@(a) isempty(a.UserData),h);
+            obj.hFileTree.SelectedNodes = h(ind);
             
             obj.hHeaderBox.Text = sprintf('%d files selected',obj.NSelected);            
             
-            ev = saeeg.evSelectionEventData(snc);
+            ev = saeeg.evSelectionEventData(h(ind));
             notify(obj,'SelectionChanged',ev);
             
             
@@ -196,25 +244,8 @@ classdef FileTree < saeeg.GUIComponent
             end
         end
         
-        function d = get.subdirs(obj)
-            d = dir(obj.MasterObj.DataRoot);
-            d = {d.name};
-            d(startsWith(d,'.')|startsWith(d,'+')) = []; % ignore directories with '.' or '+' prefix
-        end
         
-        function s = get.filelist(obj)
-            d = obj.subdirs;
-            a = dir(fullfile(obj.MasterObj.DataRoot,'**/*'));
-            an = {a.name};
-            af = {a.folder};
-            an([a.isdir]) = [];
-            af([a.isdir]) = [];
-            s = cell(size(d));
-            for i = 1:length(d)
-                ind = endsWith(af,d{i});
-                s{i} = an(ind);
-            end
-        end
+        
         
         function sf = get.SelectedFiles(obj)
             sn = obj.hFileTree.SelectedNodes;

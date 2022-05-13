@@ -29,6 +29,7 @@ classdef FileQueue < handle
         Processing  (:,1) logical
         ProcessDuration (:,1) double
         EstTotalRemaingSeconds (1,1) seconds
+        TotalElapsedSeconds    (1,1) seconds
         PercCompleted (1,1) double
         CurrentFile     (1,1) string
         CurrentFilename (1,1) string
@@ -64,7 +65,7 @@ classdef FileQueue < handle
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
             d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
-            d.TotalDurationSeconds = seconds(etime(datevec(max(obj.ProcessStartTime)),datevec(min(obj.ProcessStartTime))));
+            d.TotalDurationSeconds = obj.TotalElapsedSeconds;
             ev = saeeg.evFileQueueUpdated("STARTNEXT",d);
             notify(obj,'UpdateAvailable',ev);
         end
@@ -73,21 +74,22 @@ classdef FileQueue < handle
             if nargin == 1 || isempty(idx), idx = obj.CurrentIndex; end
             
             obj.ProcessEndTime(idx) = now;
-            
+                        
             d.Queue = obj.Queue;
             d.FileCompleted = obj.Queue(idx);
             d.FileIndex    = idx;
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
+            d.FileProcessingDuration = obj.ProcessDuration(idx);
             d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
-            d.TotalDurationSeconds = seconds(etime(datevec(max(obj.ProcessStartTime)),datevec(min(obj.ProcessStartTime))));
+            d.TotalDurationSeconds = obj.TotalElapsedSeconds;
             ev = saeeg.evFileQueueUpdated("FILEPROCESSED",d);
             notify(obj,'UpdateAvailable',ev);
             
             if all(obj.Completed)
                 d.Queue = obj.Queue;
                 d.NCompleted = obj.NCompleted;
-                d.TotalDurationSeconds = seconds(etime(datevec(max(obj.ProcessStartTime)),datevec(min(obj.ProcessStartTime))));
+                d.TotalDurationSeconds = obj.TotalElapsedSeconds;
                 ev = saeeg.evFileQueueUpdated("FINISHED",d);
                 notify(obj,'UpdateAvailable',ev);
             end
@@ -98,8 +100,9 @@ classdef FileQueue < handle
             filenames = string(filenames);
             filenames = filenames(:);
             
-            assert(all(isfile(filenames)),'saeeg:FileQueue:add_to_queue:InvalidFile', ...
-                'One or more files do not exist')
+            %%% skip assertion; can take way too long to get going
+%             assert(all(isfile(filenames)),'saeeg:FileQueue:add_to_queue:InvalidFile', ...
+%                 'One or more files do not exist')
                 
             
             obj.Queue = [obj.Queue; filenames];
@@ -176,6 +179,10 @@ classdef FileQueue < handle
         function s = get.EstTotalRemaingSeconds(obj)
             s = mean(obj.ProcessDuration) .* obj.NRemaining;
             s = seconds(s);
+        end
+        
+        function t = get.TotalElapsedSeconds(obj)
+            t = seconds(etime(datevec(max(obj.ProcessStartTime)),datevec(min(obj.ProcessStartTime))));
         end
         
         function p = get.PercCompleted(obj)

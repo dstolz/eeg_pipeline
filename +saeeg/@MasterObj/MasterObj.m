@@ -2,8 +2,8 @@ classdef (Hidden) MasterObj < handle
     % One class to rule them all
     
     properties (SetObservable,AbortSet)
-        DataRoot   (1,1) string = getpref('saeeg','DataRoot',"");
-        OutputPath (1,1) string = getpref('saeeg','OutputPath',"");
+        DataRoot   (1,1) string 
+        OutputPath (1,1) string 
         
         AnalysisState (1,1) saeeg.enAnalysisState = 1;
         
@@ -114,26 +114,25 @@ classdef (Hidden) MasterObj < handle
         
         
         function set.DataRoot(obj,p)
-            try
-                if ~isfolder(p)
-                    mkdir(p);
-                    fprintf('New DataRoot: %s\n',p)
-                end
-            end
             
             assert(isfolder(p),'saeeg:MasterObj:DataRoot:InvalidPath', ...
-                '"%s" is an invalid path',p);
+                '"%s" is an invalid path',strrep(p,'\','\\'));
             
             obj.DataRoot = p;
             setpref('saeeg','DataRoot',p);
+            
+            saeeg.vprintf(1,'New Data Root path specified: "%s"',p)
         end
 
         
         function p = get.DataRoot(obj)
             p = obj.DataRoot;
             if ~isfolder(p)
+                p = getpref('saeeg','DataRoot',cd);
+            end
+            
+            if ~isfolder(p)
                 p = uigetdir('','Select DataRoot');
-                if isempty(p), return; end
             end
             obj.DataRoot = p;
         end
@@ -143,7 +142,7 @@ classdef (Hidden) MasterObj < handle
             try
                 if ~isfolder(p)
                     mkdir(p);
-                    fprintf('New DataRoot: %s\n',p)
+                    saeeg.vprintf('New OutputPath specified: %s',p)
                 end
             end
             
@@ -152,13 +151,19 @@ classdef (Hidden) MasterObj < handle
             
             obj.OutputPath = p;
             setpref('saeeg','OutputPath',p);
+            
+            saeeg.vprintf(1,'New output path specified: "%s"',p)
         end
+        
         
         function p = get.OutputPath(obj)
             p = obj.OutputPath;
             if ~isfolder(p)
+                p = getpref('saeeg','OutputPath',cd);
+            end
+            
+            if ~isfolder(p)
                 p = uigetdir('','Select OutputPath');
-                if isempty(p), return; end
             end
             obj.OutputPath = p;
         end

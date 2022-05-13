@@ -31,7 +31,10 @@ classdef BatchGUI < saeeg.GUIComponent
     
     methods
         function obj = BatchGUI(Parent)
+            saeeg.vprintf(3,'Building BatchGUI')
+            
             if nargin > 1 && ~isempty(Parent), obj.Parent = Parent; end
+            
             
             obj.MasterObj = saeeg.MasterObj;
             
@@ -58,12 +61,12 @@ classdef BatchGUI < saeeg.GUIComponent
             % link the FileTree and AnalysisPanel objects
             addlistener(obj.FileTreeObj,'SelectionChanged',@obj.update_analysis_panel);
             
-            
             obj.gui_enable;
             
             
             if nargout == 0, clear obj; end
             
+            saeeg.vprintf(3,'Finished Building BatchGUI')
         end
         
         
@@ -114,13 +117,14 @@ classdef BatchGUI < saeeg.GUIComponent
                     obj.AnalysisPanelObj.CurrentAnalysisGUI.run_analysis(obj.MasterObj.FileQueueObj);
                     
                 case "FILEPROCESSED"
-                    [h,m,s] = hms(seconds(Q.ProcessDuration(d.FileIndex)));
+                    [h,m,s] = hms(seconds(d.ProcessDuration));
                     saeeg.vprintf(1,'Completed file %d in %d h %d m %d s: %s',d.FileIndex,h,m,round(s),d.FileCompleted)
                     
                 case "FINISHED"
-                    [h,m,s] = hms(seconds(Q.TotalDurationSeconds));
+                    [h,m,s] = hms(seconds(d.TotalDurationSeconds));
                     saeeg.vprintf(1,'Processed %d files in %d h %d m %d s',d.NCompleted,h,m,s)
-                    
+                    % this is slow. is there a faster way to refresh?
+                    obj.FileTreeObj.populate_filetree; 
             end
             
         end
@@ -170,10 +174,10 @@ classdef BatchGUI < saeeg.GUIComponent
             m = uimenu(f,'Text','Settings');
             
             dflt = getpref('saeeg','SensorLayout','biosemi64.lay');
-            mi = uimenu(m,'Text',['Sensor Layout: ' dflt],'Tag','SensorLayout');
+            mi = uimenu(m,'Text',sprintf('Sensor Layout: "%s"',dflt),'Tag','SensorLayout');
             mi.MenuSelectedFcn = @obj.menu_processor;
             
-            dflt = getpref('saeeg','GVerbosit',2);
+            dflt = getpref('saeeg','GVerbosity',2);
             mi = uimenu(m,'Text',sprintf('Verbosity: %d',dflt),'Tag','GVerbosity');
             mi.MenuSelectedFcn = @obj.menu_processor;
             
@@ -204,7 +208,7 @@ classdef BatchGUI < saeeg.GUIComponent
                     
                     obj.MasterObj.update_sensor_layout(lay{idx});
                     
-                    src.Text = ['Sensor Layout: ' lay{idx}];
+                    src.Text = sprintf('Sensor Layout: "%s"',lay{idx});
                     
                     setpref('saeeg','SensorLayout',lay{idx});
                     
@@ -215,7 +219,7 @@ classdef BatchGUI < saeeg.GUIComponent
                         '3 - Annoying', ...
                         '4 - Insanity'};
                     
-                    idx = min(GVerbosity + 1,4);
+                    idx = min(GVerbosity + 1,5);
                     
                     [idx,tf] = listdlg('ListString',v, ...
                         'PromptString','Select verbosity:', ...
@@ -226,8 +230,12 @@ classdef BatchGUI < saeeg.GUIComponent
                     
                     GVerbosity = idx - 1;
                     
+                    src.Text = sprintf('Verbosity: "%s"',v{GVerbosity+1});
+                    
                     setpref('saeeg','GVerbosity',GVerbosity);
+                    
             end
+            figure(ancestor(src,'figure'));
         end
         
         function update_analysis_panel(obj,src,event)
