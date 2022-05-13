@@ -81,10 +81,10 @@ end
 
 % log error
 if isa(msg,'MException')
-    vprintf(verbose_level,red,msg.identifier);
-    vprintf(verbose_level,red,msg.message);
+    saeeg.vprintf(verbose_level,red,msg.identifier);
+    saeeg.vprintf(verbose_level,red,msg.message);
     for i = 1:length(msg.stack)
-        vprintf(verbose_level,red,'Stack %d\n\tfile:\t%s\n\tname:\t%s\n\tline:\t%d', ...
+        saeeg.vprintf(verbose_level,red,'Stack %d\n\tfile:\t%s\n\tname:\t%s\n\tline:\t%d', ...
             i,msg.stack(i).file,msg.stack(i).name,msg.stack(i).line);
     end
     return
@@ -101,13 +101,13 @@ if verbose_level == -1, return; end
 % Print to command window
 if isempty(moreinputs)
     if red
-        fprintf(2,['%s: ' msg '\n'],curTimeStr) %#ok<PRTCAL>
+        fprintf(2,['%s: ' msg '\n'],curTimeStr)
     else
         fprintf(['%s: ' msg '\n'],curTimeStr)
     end
 else
     if red
-        fprintf(2,['%s: ' msg '\n'],curTimeStr,moreinputs{:}) %#ok<PRTCAL>
+        fprintf(2,['%s: ' msg '\n'],curTimeStr,moreinputs{:})
     else
         fprintf(['%s: ' msg '\n'],curTimeStr,moreinputs{:})
     end

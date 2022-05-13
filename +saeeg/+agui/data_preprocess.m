@@ -1,4 +1,4 @@
-classdef data_preprocess < saeeg.agui.AnalysisGUI & saeeg.agui.AnalysisInterface
+classdef data_preprocess < saeeg.agui.AnalysisGUI
     
     
     % cfg_Preprocess.definetrial = [];
@@ -19,7 +19,8 @@ classdef data_preprocess < saeeg.agui.AnalysisGUI & saeeg.agui.AnalysisInterface
     
     
     methods
-        function obj = data_preprocess(parent)
+        function obj = data_preprocess(MasterObj,parent)
+            obj.MasterObj = MasterObj;
             obj.parent = parent;
         end
         

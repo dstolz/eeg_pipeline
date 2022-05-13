@@ -1,5 +1,4 @@
-classdef biosemi_preprocess < saeeg.agui.AnalysisGUI & saeeg.agui.AnalysisInterface
-    
+classdef biosemi_preprocess < saeeg.agui.AnalysisGUI
     
     % cfg_Preprocess.definetrial = [];
     % cfg_Preprocess.definetrial.trialdef.eventtype  = 'STATUS';
@@ -19,7 +18,8 @@ classdef biosemi_preprocess < saeeg.agui.AnalysisGUI & saeeg.agui.AnalysisInterf
     
     
     methods
-        function obj = biosemi_preprocess(parent)
+        function obj = biosemi_preprocess(MasterObj,parent)
+            obj.MasterObj = MasterObj;
             obj.parent = parent;
         end
         

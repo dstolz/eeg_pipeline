@@ -6,6 +6,8 @@ classdef (Hidden) MasterObj < handle
         OutputPath (1,1) string = getpref('saeeg','OutputPath',"");
         
         AnalysisState (1,1) saeeg.enAnalysisState = 1;
+        
+        SensorLayout
     end
     
     properties
@@ -78,6 +80,14 @@ classdef (Hidden) MasterObj < handle
             
             obj.AnalysisState = newState;
 
+        end
+        
+        function update_sensor_layout(obj,lay)
+            obj.eeg_preamble;
+            
+            cfg = [];
+            cfg.layout = lay;
+            obj.SensorLayout = ft_prepare_layout(cfg);
         end
         
         function aa = get.AvailableAnalyses(obj)
@@ -157,6 +167,23 @@ classdef (Hidden) MasterObj < handle
     
     
     methods (Static)
+        
+        
+        function eeg_preamble
+            w = which('ft_defaults');
+            assert(~isempty(w),'NeedFieldTrip','Main folder for the FieldTrip Toolbox must be on Matlab''s path')
+            ft_defaults;
+        end
+        
+        function lay = eeg_available_layouts(pth)
+            if nargin == 0 || isempty(pth)
+                w = which('ft_defaults');
+                [pth,~] = fileparts(w);
+            end
+            d = dir(fullfile(pth,'**\*.lay'));
+            lay = {d.name};
+        end
+        
         function type = get_datatype(ffn)
             
             [~,~,ext] = fileparts(ffn);

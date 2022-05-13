@@ -11,11 +11,16 @@ classdef (Hidden) AnalysisGUI < handle
     properties (SetAccess = protected)
         parent
         handles
+        MasterObj
+    end
+    
+    methods (Abstract) 
+        create_gui(obj)
+        run_analysis(obj,FileQueueObj)
     end
     
     methods
         function obj = AnalysisGUI()
-%             obj.parent = parent;
         end
         
         function create_run(obj)

@@ -75,7 +75,7 @@ classdef AnalysisPanel < saeeg.GUIComponent
                 delete(h);
             end
             if ~isempty(caFnc)
-                obj.CurrentAnalysisGUI = caFnc(obj.hPanel);
+                obj.CurrentAnalysisGUI = caFnc(obj.MasterObj,obj.hPanel);
                 obj.CurrentAnalysisGUI.create_gui;
             end
 
@@ -114,7 +114,22 @@ classdef AnalysisPanel < saeeg.GUIComponent
         function analysis_state(obj,src,event)
             h = obj.hStateButton;
             
-            if isequal(src.Name,'AnalysisState')
+            if startsWith(class(src),'matlab.ui.control')
+                
+               switch h.Text
+                   case 'Run'
+                       newState = saeeg.enAnalysisState.START;
+                       
+                   case 'Stop'
+                       newState = saeeg.enAnalysisState.STOP;
+                       
+                   case 'Resume'
+                       newState = saeeg.enAnalysisState.RESUME;
+               end
+               
+                obj.ParentObj.update_analysis_state(newState);
+                
+            elseif isequal(src.Name,'AnalysisState')
                 
                 switch obj.MasterObj.AnalysisState
                     % saeeg.enAnalysisState.list
@@ -139,21 +154,6 @@ classdef AnalysisPanel < saeeg.GUIComponent
                     case [saeeg.enAnalysisState.ERROR,saeeg.enAnalysisState.FINISHED]
                         h.Text = 'Reset';
                 end
-                
-            else % gui
-                
-               switch h.Text
-                   case 'Run'
-                       newState = saeeg.enAnalysisState.START;
-                       
-                   case 'Stop'
-                       newState = saeeg.enAnalysisState.STOP;
-                       
-                   case 'Resume'
-                       newState = saeeg.enAnalysisState.RESUME;
-               end
-               
-                obj.ParentObj.update_analysis_state(newState);
                 
             end
             

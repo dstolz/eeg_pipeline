@@ -4,7 +4,11 @@ classdef FileQueue < handle
         Queue        (:,1) string
         ProcessOrder (1,1) string {mustBeMember(ProcessOrder,["serial","random"])} = "serial";
         
+        OutputPath   (1,1) string
+        
         NextIndex    (1,1) double
+        
+        SkipExisting (1,1) logical = true;
     end
     
     properties (SetAccess = private)
@@ -14,6 +18,7 @@ classdef FileQueue < handle
     
     properties (Access = protected)
 %         QueueTimer % maybe add for status
+        CurrentIndex (1,1) double
     end
     
     properties (Dependent)
@@ -25,6 +30,9 @@ classdef FileQueue < handle
         ProcessDuration (:,1) double
         EstTotalRemaingSeconds (1,1) seconds
         PercCompleted (1,1) double
+        CurrentFile     (1,1) string
+        CurrentFilename (1,1) string
+        CurrentFilepath (1,1) string
     end
     
     events
@@ -32,24 +40,27 @@ classdef FileQueue < handle
     end
     
     methods
-        function obj = FileQueue(filenames)
+        function obj = FileQueue(filenames,outpath)
             if nargin == 0 || isempty(filenames), return; end
+            if nargin >= 1 && ~isempty(outpath), obj.OutputPath = outpath; end
             
             obj.add_to_queue(filenames);
         end
         
         
-        function index = start_next(obj)
-            index = obj.NextIndex;
+        function idx = start_next(obj)
             
-            if ~isempty(index)
-                obj.ProcessStartTime(index) = now;
-                
+            idx = obj.NextIndex;
+            
+            if ~isempty(idx)
+                obj.ProcessStartTime(idx) = now;
             end
             
+            obj.CurrentIndex = idx;
+            
             d.Queue = obj.Queue;
-            d.FileStarting = obj.Queue(index);
-            d.FileIndex    = index;
+            d.FileStarting = obj.Queue(idx);
+            d.FileIndex    = idx;
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
             d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
@@ -58,13 +69,14 @@ classdef FileQueue < handle
             notify(obj,'UpdateAvailable',ev);
         end
         
-        function mark_completed(obj,index)
-            obj.ProcessEndTime(index) = now;
+        function mark_completed(obj,idx)
+            if nargin == 1 || isempty(idx), idx = obj.CurrentIndex; end
             
+            obj.ProcessEndTime(idx) = now;
             
             d.Queue = obj.Queue;
-            d.FileCompleted = obj.Queue(index);
-            d.FileIndex    = index;
+            d.FileCompleted = obj.Queue(idx);
+            d.FileIndex    = idx;
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
             d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
@@ -82,6 +94,7 @@ classdef FileQueue < handle
         end
         
         function q = add_to_queue(obj,filenames)
+            
             filenames = string(filenames);
             filenames = filenames(:);
             
@@ -121,6 +134,21 @@ classdef FileQueue < handle
         end
       
         
+        function set.OutputPath(obj,p)
+            if ~isfolder(p)
+                try
+                    mkdir(p);
+                    saeeg.vprintf(1,'Created output path: "%s"',p)
+                catch me
+                    saeeg.vprintf(0,1,me)
+                    return
+                end
+            end
+            
+            obj.OutputPath = p;
+            saeeg.vprintf(1,'Output path set to: "%s",p')
+        end
+        
         function n = get.N(obj)
             n = length(obj.Queue);
         end
@@ -152,6 +180,25 @@ classdef FileQueue < handle
         
         function p = get.PercCompleted(obj)
             p = obj.NCompleted ./ obj.N .* 100;
+        end
+        
+        function f = get.CurrentFile(obj)
+            f = obj.Queue(obj.CurrentIndex);
+        end
+        
+        function f = get.CurrentFilename(obj)
+            [~,f] = fileparts(obj.Queue(obj.CurrentIndex));
+        end
+        
+        function p = get.CurrentFilepath(obj)
+            [p,~] = obj.Queue(obj.CurrentIndex);
+        end
+        
+        function idx = get.CurrentIndex(obj)
+            if isempty(obj.CurrentIndex) || obj.CurrentIndex == 0
+                obj.CurrentIndex = obj.start_next;
+            end
+            idx = obj.CurrentIndex;
         end
         
     end
