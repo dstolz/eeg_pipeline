@@ -49,10 +49,18 @@ classdef (Hidden) AnalysisGUI < handle
             h.ColumnEditable = [false true];
             h.ColumnFormat = c;
             h.RowName = {};
-            h.CellEditCallback = @obj.verify_parameters;
+%             h.CellEditCallback = @obj.verify_parameters;
         end
-        
-        
+    end
+    
+    methods (Static)
+        function cfg = tabledata_to_cfg(hObj)
+            ud = hObj.UserData;
+            data = hObj.Data;
+            ind = structfun(@isnumeric,ud);
+            data(ind,2) = cellfun(@str2num,data(ind,2),'uni',0);
+            cfg = cell2struct(data(:,2),data(:,1));
+        end
     end
     
     
