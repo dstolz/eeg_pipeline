@@ -75,7 +75,7 @@ classdef biosemi_preprocess < saeeg.agui.AnalysisGUI
             data.reref = 'yes';
             data.refchannel = 'A1,A2';
             data.detrend = 'yes';
-            data.bpfreq = [2 35];
+            data.bpfreq = [1 14];
             data.bpfilter = 'yes';
             
             data = getpref('saeeg_agui','biosemi_preprocess_preprocessing',data);
