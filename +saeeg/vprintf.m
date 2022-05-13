@@ -137,11 +137,11 @@ end
 
 if needNewLog || isempty(GLogFID) || GLogFID == -1
     username=getenv('USERNAME');
-    tmpDir = fullfile('C:\Users',username,'AppData\Local\Temp\vprintf');
+    tmpDir = fullfile('C:\Users',username,'AppData\Local\saeeg_vprintf');
     if ~isfolder(tmpDir), mkdir(tmpDir); end
     errlogs = fullfile(tmpDir,'.error_logs');
     if ~isfolder(errlogs), mkdir(errlogs); end
-    GLogFID = fopen(fullfile(errlogs,['error_log_' datestr(now,'ddmmmyyyy') '.txt']),'at');
+    GLogFID = fopen(fullfile(errlogs,['error_log_' datestr(now,30) '.txt']),'at');
 end
 
 if isnumeric(GLogFID) && GLogFID > 2
