@@ -67,6 +67,8 @@ classdef data_concatenate < saeeg.agui.AnalysisGUI
             end
             
             Q.mark_completed(1:length(Q.Queue));
+            
+            Q.start_next;
         end
         
         function create_gui(obj)
