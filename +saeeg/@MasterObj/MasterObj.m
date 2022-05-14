@@ -4,6 +4,7 @@ classdef (Hidden) MasterObj < handle
     properties (SetObservable,AbortSet)
         DataRoot   (1,1) string 
         OutputPath (1,1) string 
+        FilePattern (1,:) char
         
         AnalysisState (1,1) saeeg.enAnalysisState = 1;
         
@@ -113,8 +114,25 @@ classdef (Hidden) MasterObj < handle
         end
         
         
-        function set.DataRoot(obj,p)
+        function set.FilePattern(obj,p)
+            if isempty(p), p = '**/*'; end
             
+            obj.FilePattern = p;
+            
+            setpref('saeeg','FilePattern',p);
+            saeeg.vprintf(1,'New File Pattern specified: "%s"',p)
+        end
+        
+        
+        function p = get.FilePattern(obj)
+            p = obj.FilePattern;
+            if isempty(p)
+                p = getpref('saeeg','FilePattern','**/*');
+            end
+        end
+        
+        
+        function set.DataRoot(obj,p)
             assert(isfolder(p),'saeeg:MasterObj:DataRoot:InvalidPath', ...
                 '"%s" is an invalid path',strrep(p,'\','\\'));
             

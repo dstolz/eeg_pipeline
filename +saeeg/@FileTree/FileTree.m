@@ -12,6 +12,7 @@ classdef FileTree < saeeg.GUIComponent
         hHeaderBox
         hDataRoot
         hOutputPath
+        hFilePattern
     end
     
     properties (Dependent)        
@@ -40,7 +41,7 @@ classdef FileTree < saeeg.GUIComponent
         function create(obj)
             g = uigridlayout(obj.Parent);
             g.RowHeight = {30,30,30,'1x'};%,150};
-            g.ColumnWidth = {100,'1x'};
+            g.ColumnWidth = {100,100,'1x'};
             obj.hGridLayout = g;
             
             
@@ -55,7 +56,7 @@ classdef FileTree < saeeg.GUIComponent
             
             h = uieditfield(g);
             h.Layout.Row = 1;
-            h.Layout.Column = 2;
+            h.Layout.Column = [2 3];
             h.Tag = 'DataRoot';
             h.Value = obj.MasterObj.DataRoot;
             h.ValueChangedFcn = @obj.path_updated;
@@ -74,7 +75,7 @@ classdef FileTree < saeeg.GUIComponent
             
             h = uieditfield(g);
             h.Layout.Row = 2;
-            h.Layout.Column = 2;
+            h.Layout.Column = [2 3];
             h.Tag = 'OutputPath';
             h.Value = obj.MasterObj.OutputPath;
             h.ValueChangedFcn = @obj.path_updated;
@@ -84,16 +85,37 @@ classdef FileTree < saeeg.GUIComponent
             
             
             
+            
+            
             h = uilabel(g);
             h.Layout.Row = 3;
+            h.Layout.Column = 1;
+            h.Text = 'File Pattern:';
+            h.HorizontalAlignment = 'right';
+            
+            h = uieditfield(g);
+            h.Layout.Row = 3;
             h.Layout.Column = 2;
+            h.Tag = 'FilePattern';
+            h.Value = obj.MasterObj.FilePattern;
+            h.ValueChangedFcn = @obj.path_updated;
+            h.Enable = 'off';
+            h.HorizontalAlignment = 'center';
+            obj.hFilePattern = h;
+            
+            
+            
+            
+            h = uilabel(g);
+            h.Layout.Row = 3;
+            h.Layout.Column = 3;
             h.Text = 'Initializing ...';
             obj.hHeaderBox = h;
             
             
             h = uitree(g);
             h.Layout.Row = 4;
-            h.Layout.Column = [1 2];
+            h.Layout.Column = [1 3];
             h.Tag = 'FileList';
             h.Multiselect = 'on';
             h.SelectionChangedFcn = @obj.tree_selection_updated;
@@ -117,6 +139,8 @@ classdef FileTree < saeeg.GUIComponent
         
         
         function populate_filetree(obj,src,event)
+            M = obj.MasterObj;
+            
             obj.hFileTree.Enable = 'off';
             ha = ancestor(obj.hFileTree,'figure');
             hap = ha.Pointer; % original pointer
@@ -124,13 +148,13 @@ classdef FileTree < saeeg.GUIComponent
             
             delete(obj.hFileNode);
             delete(obj.hDirNode);
-            
-            saeeg.vprintf(1,'Searching for files under DataRoot: "%s"',obj.MasterObj.DataRoot);
-            d = dir(obj.MasterObj.DataRoot);
+                        
+            saeeg.vprintf(1,'Searching for files under DataRoot: "%s"',fullfile(M.DataRoot,M.FilePattern));
+            d = dir(M.DataRoot);
             d(startsWith({d.name},'.')|startsWith({d.name},'+')) = [];
             df = cellfun(@fullfile,{d.folder},{d.name},'uni',0);
             
-            a = cellfun(@(a) dir(fullfile(a,'**/*')),df,'uni',0);
+            a = cellfun(@(a) dir(fullfile(a,M.FilePattern)),df,'uni',0);
 
 %             obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(d),sum(cellfun(@numel,s))); drawnow
             [~,DirM] = ipticondir;
