@@ -217,6 +217,8 @@ classdef BatchGUI < saeeg.GUIComponent
                     
                     setpref('saeeg','SensorLayout',lay{idx});
                     
+                    saeeg.vprintf(1,'Sensor layout file: "%s"',lay{idx})
+                    
                 case 'GVerbosity'
                     v = {'0 - Stealth', ...
                         '1 - Normal', ...
@@ -239,9 +241,13 @@ classdef BatchGUI < saeeg.GUIComponent
                     
                     setpref('saeeg','GVerbosity',GVerbosity);
                     
+                    saeeg.vprintf(GVerbosity,'Verbosity set to: %s',v{GVerbosity+1});
+                    
                 case 'OverwriteExisting'
                     src.Checked = ~src.Checked;
                     setpref('saeeg','OverwriteExisting',src.Checked);
+                    
+                    saeeg.vprintf(1,'OverwriteExisting set to "%s"',src.Checked)
                     
             end
             figure(ancestor(src,'figure'));
