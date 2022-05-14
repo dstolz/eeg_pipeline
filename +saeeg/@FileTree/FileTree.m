@@ -249,6 +249,10 @@ classdef FileTree < saeeg.GUIComponent
         
         function sf = get.SelectedFiles(obj)
             sn = obj.hFileTree.SelectedNodes;
+            if isempty(sn)
+                sf = {};
+                return
+            end
             ind = cellfun(@isempty,{sn.NodeData});
             sn(ind) = [];
             sf = {sn.NodeData}';

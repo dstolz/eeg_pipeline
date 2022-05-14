@@ -175,9 +175,11 @@ classdef (Hidden) MasterObj < handle
         
         
         function eeg_preamble
-            w = which('ft_defaults');
-            assert(~isempty(w),'NeedFieldTrip','Main folder for the FieldTrip Toolbox must be on Matlab''s path')
-            ft_defaults;
+            try
+                ft_defaults;
+            catch me
+                saeeg.vprintf(0,1,me);
+            end
         end
         
         function lay = eeg_available_layouts(pth)

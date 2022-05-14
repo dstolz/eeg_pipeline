@@ -27,8 +27,8 @@ m = mode(ne);
 ind = ne ~= m;
 n = sum(ind);
 if n > 0
-    fprintf(2,'Found %d files that do not conform to the most common format\n\tSkipping:\n',n)
-    cellfun(@(a,b) fprintf(2,'\t\t%d. "%s"\n',a,b),num2cell(find(ind)),fn(ind))
+    saeeg.vprintf(1,1,'Found %d files that do not conform to the most common format. Skipping:',n)
+    cellfun(@(a,b) saeeg.vprintf(1,1,'\t\t%d. "%s"',a,b),num2cell(find(ind)),fn(ind))
     s(ind) = [];
 end
 

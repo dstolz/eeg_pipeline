@@ -22,11 +22,14 @@ classdef data_ica < saeeg.agui.AnalysisGUI
                        
             
             fnOut = Q.CurrentFilename + "_" + cfg.method + ".mat";
-            ffnOut = char(fullfile(Q.OutputPath,fnOut));
+            pthOut = fullfile(Q.OutputPath,'ica');
+            ffnOut = char(fullfile(pthOut,fnOut));
             
-            if Q.SkipExisting && exist(ffnOut,'file')
+            
+            if ~Q.OverwriteExisting && exist(ffnOut,'file')
                 saeeg.vprintf(1,1,'File already exists, skippping: %s\n',fnOut)
             else
+                if ~isfolder(pthOut), mkdir(pthOut); end
                 cfg.inputfile  = char(Q.CurrentFile);
                 cfg.outputfile = ffnOut;
                 ft_componentanalysis(cfg);

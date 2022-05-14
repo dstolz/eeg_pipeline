@@ -27,6 +27,7 @@ classdef AnalysisPanel < saeeg.GUIComponent
             
             addlistener(obj,'DataType','PostSet',@obj.update_analyses);
             addlistener(obj.MasterObj,'AnalysisState','PostSet',@obj.analysis_state);
+            
         end
         
         
@@ -48,7 +49,8 @@ classdef AnalysisPanel < saeeg.GUIComponent
             h.Layout.Row = 1;
             h.Layout.Column = 2;
             h.Text = 'Run';
-            h.ButtonPushedFcn = @obj.analysis_state;
+            h.FontWeight = 'bold';
+            h.ButtonPushedFcn = @obj.analysis_state_button;
             h.Enable = 'off';
             obj.hStateButton = h;
             
@@ -60,6 +62,8 @@ classdef AnalysisPanel < saeeg.GUIComponent
             obj.update_analyses;
             
             obj.update_current_analysis;
+            
+            obj.analysis_state(obj.MasterObj.AnalysisState);
         end
         
         function reset(obj)
@@ -110,52 +114,66 @@ classdef AnalysisPanel < saeeg.GUIComponent
             fh.Pointer = fhap;
         end
         
+        function analysis_state_button(obj,src,event)
+            switch src.Text
+                case 'Run'
+                    newState = "START";
+                    
+                case 'Stop'
+                    newState = "STOP";
+                    
+                case 'Resume'
+                    newState = "RESUME";
+                    
+                case 'Setting up'
+                    saeeg.vprintf(0,1,'Must first select file(s) and analysis')
+                    return
+            end
+            
+            obj.ParentObj.update_analysis_state(newState);
+        end
         
         function analysis_state(obj,src,event)
-            h = obj.hStateButton;
+            h = obj.hStateButton;                     
             
-            if startsWith(class(src),'matlab.ui.control')
-                
-               switch h.Text
-                   case 'Run'
-                       newState = saeeg.enAnalysisState.START;
-                       
-                   case 'Stop'
-                       newState = saeeg.enAnalysisState.STOP;
-                       
-                   case 'Resume'
-                       newState = saeeg.enAnalysisState.RESUME;
-               end
-               
-                obj.ParentObj.update_analysis_state(newState);
-                
-            elseif isequal(src.Name,'AnalysisState')
-                
-                switch obj.MasterObj.AnalysisState
-                    % saeeg.enAnalysisState.list
-                    case saeeg.enAnalysisState.ERROR
-                        h.Enable = 'off';
-                        h.Text = 'Reset After Error';
+            h.Enable = 'on';
+            switch obj.MasterObj.AnalysisState
+                % saeeg.enAnalysisState.list
+                case "ERROR"
+                    h.Enable = 'off';
+                    h.Text = 'Reset After Error';
+                    h.BackgroundColor = '#D40000';
                     
-                    case saeeg.enAnalysisState.SETUP
-                        h.Enable = 'off';
-                        h.Text = 'Run';
-                        
-                    case saeeg.enAnalysisState.READY
-                        h.Enable = 'on';
-                        h.Text = 'Run';
-                        
-                    case saeeg.enAnalysisState.PAUSED
-                        h.Text = 'Resume';
-                        
-                    case [saeeg.enAnalysisState.START,saeeg.enAnalysisState.PROCESSING]
-                        h.Text = 'Stop';
-                        
-                    case [saeeg.enAnalysisState.ERROR,saeeg.enAnalysisState.FINISHED]
-                        h.Text = 'Reset';
-                end
-                
+                case "SETUP"
+                    h.Enable = 'off';
+                    h.Text = 'Setting up';
+                    h.Enable = 'off';
+                    h.BackgroundColor = '#FFFFA9';
+                    
+                case "READY"
+                    h.Enable = 'on';
+                    h.Text = 'Run';
+                    h.BackgroundColor = '#A9FFA8';
+                    
+                case "PAUSED"
+                    h.Text = 'Resume';
+                    h.BackgroundColor = '#FFDA65';
+                    
+                case {"START","PROCESSING"}
+                    h.Text = 'Stop';
+                    h.BackgroundColor = '#FF8E76';
+                    
+                case "ERROR"
+                    h.Text = 'Reset';
+                    h.BackgroundColor = 'D40000';
+                    
+                case {"STOP","FINISHED"}
+                    h.Enable = 'on';
+                    h.Text = 'Run';
+                    h.BackgroundColor = '#A9FFA8';
+                    
             end
+            drawnow
             
             
         end

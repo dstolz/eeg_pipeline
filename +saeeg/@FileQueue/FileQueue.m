@@ -8,7 +8,7 @@ classdef FileQueue < handle
         
         NextIndex    (1,1) double
         
-        SkipExisting (1,1) logical = true;
+        OverwriteExisting (1,1) logical = false;
     end
     
     properties (SetAccess = private)
@@ -53,19 +53,22 @@ classdef FileQueue < handle
             
             idx = obj.NextIndex;
             
-            if ~isempty(idx)
+            if ~isempty(idx) && idx > 0
                 obj.ProcessStartTime(idx) = now;
             end
             
             obj.CurrentIndex = idx;
             
             d.Queue = obj.Queue;
-            d.FileStarting = obj.Queue(idx);
-            d.FileIndex    = idx;
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
-            d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
-            d.TotalDurationSeconds = obj.TotalElapsedSeconds;
+            
+            if idx > 0
+                d.FileStarting = obj.Queue(idx);
+                d.FileIndex    = idx;
+                d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
+                d.TotalDurationSeconds = obj.TotalElapsedSeconds;
+            end
             ev = saeeg.evFileQueueUpdated("STARTNEXT",d);
             notify(obj,'UpdateAvailable',ev);
         end
@@ -80,7 +83,7 @@ classdef FileQueue < handle
             d.FileIndex    = idx;
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
-            d.FileProcessingDuration = obj.ProcessDuration(idx);
+            d.ProcessDuration = obj.ProcessDuration(idx);
             d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
             d.TotalDurationSeconds = obj.TotalElapsedSeconds;
             ev = saeeg.evFileQueueUpdated("FILEPROCESSED",d);
@@ -123,6 +126,7 @@ classdef FileQueue < handle
             
             ind = ~obj.Completed;
             
+            if ~any(ind), return; end
             if ismember(find(ind),idx), return; end
             
             switch obj.ProcessOrder

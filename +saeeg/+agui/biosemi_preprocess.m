@@ -89,14 +89,13 @@ classdef biosemi_preprocess < saeeg.agui.AnalysisGUI
         
         
         
-        function run_analysis(obj,Q)
-            
-            
+        function run_analysis(obj,Q)            
             [~,fnIn,~] = fileparts(Q.CurrentFile);
             ffnOut = char(fullfile(obj.MasterObj.OutputPath,fnIn + ".mat"));
             
-            if Q.SkipExisting && exist(ffnOut,'file')
+            if ~Q.OverwriteExisting && exist(ffnOut,'file')
                 saeeg.vprintf(1,1,'File already exists, skippping: %s\n',Q.CurrentFile)
+                return
             end
             
             cfg = [];

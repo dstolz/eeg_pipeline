@@ -71,13 +71,8 @@ classdef BatchGUI < saeeg.GUIComponent
         
         
         function update_analysis_state(obj,newState)
-            % see if everyone is ready for the state update
-            %             curState = obj.MasterObj.AnalysisState;
-            
-            %             if curState > 1 && curState < 9 && isempty(obj.curDataFileQueue)
-            %                 return
-            %             end
-            
+            % curState = obj.MasterObj.AnalysisState;
+
             try
                 obj.MasterObj.AnalysisState = newState;
             catch me
@@ -99,7 +94,11 @@ classdef BatchGUI < saeeg.GUIComponent
                     
                     Q.start_next;
                     
+                case "STOP"
+                    saeeg.vprintf(1,1,'Analysis stopped by user')
                     
+                case "FINISHED"
+                    saeeg.vprintf(1,'Analysis completed')
             end
             
         end
@@ -114,15 +113,16 @@ classdef BatchGUI < saeeg.GUIComponent
             switch event.NewState
                 case "STARTNEXT"
                     saeeg.vprintf(1,'Starting file %d, %d remaining. "%s"',d.FileIndex,d.NRemaining,d.FileStarting)
-                    obj.AnalysisPanelObj.CurrentAnalysisGUI.run_analysis(obj.MasterObj.FileQueueObj);
+                    obj.AnalysisPanelObj.CurrentAnalysisGUI.run_analysis(Q);
                     
                 case "FILEPROCESSED"
                     [h,m,s] = hms(seconds(d.ProcessDuration));
                     saeeg.vprintf(1,'Completed file %d in %d h %d m %d s: %s',d.FileIndex,h,m,round(s),d.FileCompleted)
                     
                 case "FINISHED"
-                    [h,m,s] = hms(seconds(d.TotalDurationSeconds));
+                    [h,m,s] = hms(d.TotalDurationSeconds);
                     saeeg.vprintf(1,'Processed %d files in %d h %d m %d s',d.NCompleted,h,m,s)
+                    obj.MasterObj.AnalysisState = "FINISHED";                    
                     % this is slow. is there a faster way to refresh?
                     obj.FileTreeObj.populate_filetree; 
             end
@@ -174,12 +174,17 @@ classdef BatchGUI < saeeg.GUIComponent
             m = uimenu(f,'Text','Settings');
             
             dflt = getpref('saeeg','SensorLayout','biosemi64.lay');
-            mi = uimenu(m,'Text',sprintf('Sensor Layout: "%s"',dflt),'Tag','SensorLayout');
-            mi.MenuSelectedFcn = @obj.menu_processor;
+            mi(1) = uimenu(m,'Text',sprintf('Sensor Layout: "%s"',dflt),'Tag','SensorLayout');
+            
             
             dflt = getpref('saeeg','GVerbosity',2);
-            mi = uimenu(m,'Text',sprintf('Verbosity: %d',dflt),'Tag','GVerbosity');
-            mi.MenuSelectedFcn = @obj.menu_processor;
+            mi(end+1) = uimenu(m,'Text',sprintf('Verbosity: %d',dflt),'Tag','GVerbosity');
+            
+            dflt = getpref('saeeg','OverwriteExisting',false);
+            mi(end+1) = uimenu(m,'Text','Overwrite existing files','Tag','OverwriteExisting', ...
+                'Checked',dflt);
+            
+            set(mi,'MenuSelectedFcn',@obj.menu_processor);
             
         end
         
@@ -233,6 +238,10 @@ classdef BatchGUI < saeeg.GUIComponent
                     src.Text = sprintf('Verbosity: "%s"',v{GVerbosity+1});
                     
                     setpref('saeeg','GVerbosity',GVerbosity);
+                    
+                case 'OverwriteExisting'
+                    src.Checked = ~src.Checked;
+                    setpref('saeeg','OverwriteExisting',src.Checked);
                     
             end
             figure(ancestor(src,'figure'));
