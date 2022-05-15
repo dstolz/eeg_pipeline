@@ -23,6 +23,42 @@ classdef biosemi_preprocess < saeeg.agui.AnalysisGUI
             obj.parent = parent;
         end
         
+        function run_analysis(obj,Q)
+            ffnOut = char(fullfile(obj.MasterObj.OutputPath, Q.CurrentFilename + ".mat"));
+            
+            if ~Q.OverwriteExisting && exist(ffnOut,'file')
+                saeeg.vprintf(1,1,'File already exists, skippping: %s\n',Q.CurrentFile)
+                
+            else
+                
+                cfg = [];
+                cfg.trialdef = obj.tabledata_to_cfg(obj.handles.definetrial);
+                cfg.headerfile = char(Q.CurrentFile);
+                cfg = ft_definetrial(cfg);
+                
+                cfg.trl = [cfg.trl(:,1)', 0]; % reconjigure trial samples for onset/offset timing from separate events [3 4]
+                
+                
+                data = ft_preprocessing(cfg);
+                
+                cfg = [];
+                cfg.resamplefs = obj.handles.resamplefs.Value;
+                data = ft_resampledata(cfg,data);
+                
+                cfg = obj.tabledata_to_cfg(obj.handles.preprocess);
+                cfg.refchannel = split(cfg.refchannel,',');
+                data = ft_preprocessing(cfg,data);
+                
+                saeeg.vprintf(1,'Saving data: "%s"',ffnOut)
+                save(ffnOut,'data');
+            end
+            
+            Q.mark_completed;
+            
+            Q.start_next;
+
+        end
+        
         function create_gui(obj)
             g = uigridlayout(obj.parent);
             g.ColumnWidth = {'1x','1x'};
@@ -88,37 +124,6 @@ classdef biosemi_preprocess < saeeg.agui.AnalysisGUI
         end
         
         
-        
-        function run_analysis(obj,Q)            
-            [~,fnIn,~] = fileparts(Q.CurrentFile);
-            ffnOut = char(fullfile(obj.MasterObj.OutputPath,fnIn + ".mat"));
-            
-            if ~Q.OverwriteExisting && exist(ffnOut,'file')
-                saeeg.vprintf(1,1,'File already exists, skippping: %s\n',Q.CurrentFile)
-                return
-            end
-            
-            cfg = [];
-            cfg.trialdef = obj.tabledata_to_cfg(obj.handles.definetrial);
-            cfg.headerfile = char(Q.CurrentFile);
-            cfg = ft_definetrial(cfg);
-            
-            cfg.trl = [cfg.trl(:,1)', 0]; % reconjigure trial samples for onset/offset timing from separate events [3 4]
-            
-
-            data = ft_preprocessing(cfg);
-            
-            cfg = [];
-            cfg.resamplefs = obj.handles.resamplefs.Value;
-            data = ft_resampledata(cfg,data);
-            
-            cfg = obj.tabledata_to_cfg(obj.handles.preprocess);
-            cfg.refchannel = split(cfg.refchannel,',');
-            data = ft_preprocessing(cfg,data);
-           
-            saeeg.vprintf(1,'Saving data: "%s"',ffnOut)
-            save(ffnOut,'data');
-        end
         
         
     end

@@ -14,6 +14,8 @@ classdef (Hidden) AnalysisGUI < handle
         MasterObj
     end
     
+    
+    
     methods (Abstract) 
         create_gui(obj)
         run_analysis(obj,FileQueueObj)

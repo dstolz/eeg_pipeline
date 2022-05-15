@@ -41,7 +41,7 @@ classdef FileQueue < handle
     end
     
     methods
-        function obj = FileQueue(filenames,outpath)
+        function obj = FileQueue(filenames,outpath,fnSuffix)
             if nargin == 0 || isempty(filenames), return; end
             if nargin >= 1 && ~isempty(outpath), obj.OutputPath = outpath; end
             
@@ -62,10 +62,10 @@ classdef FileQueue < handle
             d.Queue = obj.Queue;
             d.NCompleted = obj.NCompleted;
             d.NRemaining = obj.NRemaining;
-            
+            d.FileIndex    = idx;
+
             if idx > 0
                 d.FileStarting = obj.Queue(idx);
-                d.FileIndex    = idx;
                 d.EstTotalRemaingSeconds = obj.EstTotalRemaingSeconds;
                 d.TotalDurationSeconds = obj.TotalElapsedSeconds;
             end
@@ -153,7 +153,7 @@ classdef FileQueue < handle
             end
             
             obj.OutputPath = p;
-            saeeg.vprintf(1,'Output path set to: "%s",p')
+            saeeg.vprintf(1,'Output path set to: "%s"',p)
         end
         
         function n = get.N(obj)

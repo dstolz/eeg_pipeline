@@ -45,11 +45,13 @@ classdef FileTree < saeeg.GUIComponent
             obj.hGridLayout = g;
             
             
+            
+            
             h = uibutton(g);
             h.Layout.Row = 1;
             h.Layout.Column = 1;
             h.Tag = 'DataRoot';
-            h.Text = 'Data Root:';
+            h.Text = 'Data Source:';
             h.ButtonPushedFcn = @obj.select_pathfield;
             h.Tooltip = 'Click to select DataRoot path';
             h.HorizontalAlignment = 'right';
@@ -64,11 +66,14 @@ classdef FileTree < saeeg.GUIComponent
             obj.hDataRoot = h;
             
             
+            
+            
+            
             h = uibutton(g);
             h.Layout.Row = 2;
             h.Layout.Column = 1;
             h.Tag = 'OutputPath';
-            h.Text = 'Output Path:';
+            h.Text = 'Analysis Output:';
             h.ButtonPushedFcn = @obj.select_pathfield;
             h.Tooltip = 'Click to select OutputPath';
             h.HorizontalAlignment = 'right';
@@ -99,6 +104,7 @@ classdef FileTree < saeeg.GUIComponent
             h.Tag = 'FilePattern';
             h.Value = obj.MasterObj.FilePattern;
             h.ValueChangedFcn = @obj.path_updated;
+            h.Tooltip = 'Use pattern **/* to recursively search directories';
             h.Enable = 'off';
             h.HorizontalAlignment = 'center';
             obj.hFilePattern = h;
@@ -110,7 +116,11 @@ classdef FileTree < saeeg.GUIComponent
             h.Layout.Row = 3;
             h.Layout.Column = 3;
             h.Text = 'Initializing ...';
+            h.HorizontalAlignment = 'center';
             obj.hHeaderBox = h;
+            
+            
+            
             
             
             h = uitree(g);
@@ -124,7 +134,7 @@ classdef FileTree < saeeg.GUIComponent
             
             % not sure why the caller function has to be specified in the
             % @(src,event)... format here?
-            addlistener(obj.MasterObj,'DataRoot','PostSet',@obj.populate_filetree);
+            addlistener(obj.MasterObj,{'DataRoot','FilePattern'},'PostSet',@obj.populate_filetree);
             addlistener(obj.MasterObj,'AnalysisState','PostSet',@obj.analysis_state);
         end
         
@@ -156,7 +166,7 @@ classdef FileTree < saeeg.GUIComponent
             
             a = cellfun(@(a) dir(fullfile(a,M.FilePattern)),df,'uni',0);
 
-%             obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(d),sum(cellfun(@numel,s))); drawnow
+            obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(d),sum(cellfun(@numel,a))); drawnow
             [~,DirM] = ipticondir;
             iconFolder = fullfile(DirM,'foldericon.gif');
             iconFile = fullfile(DirM,'file_new.png');
@@ -169,13 +179,18 @@ classdef FileTree < saeeg.GUIComponent
             kDir = 1;
             kFile = 1;
             for i = 1:length(a)
-                
                 fn = {a{i}.name};
                 ind = startsWith(fn,'.')|startsWith(fn,'+'); % ignore directories with '.' or '+' prefix
                 a{i}(ind) = [];
                 fn(ind) = [];
+                
+                if isempty(fn), continue; end
+                
                 ffn = cellfun(@fullfile,{a{i}.folder},fn,'uni',0);
-
+                
+                
+                saeeg.vprintf(3,'Adding %d items to filetree',length(ffn))
+                
                 aisdir = [a{i}.isdir];
                 
                 saeeg.vprintf(4,'FileTree: Adding main dir: "%s"',df{i})

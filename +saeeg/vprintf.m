@@ -46,16 +46,20 @@ function vprintf(verbose_level,varargin)
 % The msg input can also be an MException object and the entire error
 % message and stack will be printed to the log.
 %
-% Daniel.Stolzberg@gmail.com 2015
+% Daniel.Stolzberg@gmail.com 2022
 
-% Copyright (C) 2016  Daniel Stolzberg, PhD
-global GVerbosity
+% Copyright (C) 2022  Daniel Stolzberg, PhD
+global GVerbosity GLogFID
 
 if isempty(GVerbosity) || ~isnumeric(GVerbosity), GVerbosity = 1; end
 
 if verbose_level > GVerbosity, return; end
 
-
+if isequal(varargin{1},'OPENLOG')
+    fn = fopen(GLogFID);
+    winopen(fn);
+    return
+end
 
  
 curTimeStr = datestr(now,'HH:MM:SS.FFF');

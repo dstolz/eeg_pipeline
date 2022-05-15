@@ -9,6 +9,8 @@ classdef (Hidden) MasterObj < handle
         AnalysisState (1,1) saeeg.enAnalysisState = 1;
         
         SensorLayout
+        
+        OverwriteExisting (1,1) logical = false;
     end
     
     properties
@@ -67,10 +69,10 @@ classdef (Hidden) MasterObj < handle
                 test = true;
                 
             elseif prevState == 9 % finished -> error|setup
-                test = newState <= 1;
+                test = true;
                 
-            elseif prevState == 0 % error -> setup
-                test = newState == 1;
+            elseif prevState == 255 % error -> setup
+                test = newState < 3;
                 
             end
             

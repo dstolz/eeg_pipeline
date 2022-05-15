@@ -38,14 +38,14 @@ switch r
         sgtitle(hObj,'Saving ...','Color','g'); drawnow
         
         rcfg = [];
-        rcfg.outputfile = hObj.UserData.ffnOut;
+        rcfg.outputfile = char(hObj.UserData.ffnOut);
         rcfg.component = find(hObj.UserData.compToBeRejected);
         ft_rejectcomponent(rcfg,hObj.UserData.comp);
         
         ind = structfun(@(a) any(ishandle(a(:))),hObj.UserData);
         fn = fieldnames(hObj.UserData);
         hObj.UserData = rmfield(hObj.UserData,fn(ind));
-        savefig(hObj,hObj.FileName);
+        savefig(hObj,char(hObj.UserData.ffnTopoFig));
             
         fprintf(' done\n')
         

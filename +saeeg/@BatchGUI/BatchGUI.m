@@ -13,6 +13,8 @@ classdef BatchGUI < saeeg.GUIComponent
     
     properties (SetAccess = private)
         hMainGridLayout
+        
+        hAnalysisListener
     end
     
     properties (Dependent)
@@ -73,32 +75,48 @@ classdef BatchGUI < saeeg.GUIComponent
         function update_analysis_state(obj,newState)
             % curState = obj.MasterObj.AnalysisState;
 
+            M = obj.MasterObj;
+            
             try
-                obj.MasterObj.AnalysisState = newState;
+                M.AnalysisState = newState;
             catch me
                 saeeg.vprintf(0,1,me)
                 return
             end
             
+            
             switch newState
                 case "START"
-                    obj.MasterObj.FileQueueObj = saeeg.FileQueue(obj.FileTreeObj.SelectedFiles,obj.MasterObj.OutputPath);
+                    M.FileQueueObj = saeeg.FileQueue(obj.FileTreeObj.SelectedFiles,M.OutputPath);
                     
-                    Q = obj.MasterObj.FileQueueObj;
+                    M.FileQueueObj.OverwriteExisting = M.OverwriteExisting;
                     
-                    h = addlistener(Q,'UpdateAvailable',@obj.process_queue);
+                    delete(obj.hAnalysisListener);
+                    h = addlistener(M.FileQueueObj,'UpdateAvailable',@obj.process_queue);
                     h.Recursive = 1;
+                    obj.hAnalysisListener = h;
+                    
                     ca = obj.AnalysisPanelObj.CurrentAnalysis;
                     
                     saeeg.vprintf(1,'Attempting to run analysis: %s',func2str(ca))
                     
-                    Q.start_next;
+                    obj.update_analysis_state("PROCESSING");
+                    
+                case "PROCESSING"
+                    saeeg.vprintf(1,'Begin Processing %d files ...',M.FileQueueObj.NRemaining)
+                    M.FileQueueObj.start_next;
                     
                 case "STOP"
                     saeeg.vprintf(1,1,'Analysis stopped by user')
-                    
+                    delete(obj.hAnalysisListener);
+
                 case "FINISHED"
                     saeeg.vprintf(1,'Analysis completed')
+                    delete(obj.hAnalysisListener);
+
+                case "ERROR"
+                    saeeg.vprintf(0,1,'Analysis failed on file: "%s"',M.FileQueueObj.CurrentFile)
+                    delete(obj.hAnalysisListener);
             end
             
         end
@@ -107,13 +125,27 @@ classdef BatchGUI < saeeg.GUIComponent
         
         function process_queue(obj,src,event)
             
+            drawnow
+            if obj.MasterObj.AnalysisState == "STOP"
+                saeeg.vprintf(0,1,'User stopped analysis.')
+                return
+            end
+            
             Q = obj.MasterObj.FileQueueObj;
             
             d = event.Data;
             switch event.NewState
                 case "STARTNEXT"
-                    saeeg.vprintf(1,'Starting file %d, %d remaining. "%s"',d.FileIndex,d.NRemaining,d.FileStarting)
-                    obj.AnalysisPanelObj.CurrentAnalysisGUI.run_analysis(Q);
+                    try
+                        if obj.MasterObj.AnalysisState > 8
+                            return
+                        end
+                        saeeg.vprintf(1,'Starting file %d, %d remaining. "%s"',d.FileIndex,d.NRemaining,d.FileStarting)
+                        obj.AnalysisPanelObj.CurrentAnalysisGUI.run_analysis(Q);
+                    catch me
+                        saeeg.vprintf(0,1,me);
+                        obj.update_analysis_state("ERROR");
+                    end
                     
                 case "FILEPROCESSED"
                     [h,m,s] = hms(seconds(d.ProcessDuration));
@@ -183,18 +215,22 @@ classdef BatchGUI < saeeg.GUIComponent
             dflt = getpref('saeeg','OverwriteExisting',false);
             mi(end+1) = uimenu(m,'Text','Overwrite existing files','Tag','OverwriteExisting', ...
                 'Checked',dflt);
+            obj.MasterObj.OverwriteExisting = dflt;
+            
+            
+            
+            mi(end+1) = uimenu(m,'Text','Open Log','Tag','OpenLog');            
+            
             
             set(mi,'MenuSelectedFcn',@obj.menu_processor);
             
+            
+            
         end
         
-        function finish_setup(obj)
-            lay = getpref('saeeg','SensorLayout','biosemi64.lay');
-            obj.MasterObj.update_sensor_layout(lay);
-        end
         
         function menu_processor(obj,src,event)
-            global GVerbosity
+            global GVerbosity GLogFID
             
             switch src.Tag
                 case 'SensorLayout'
@@ -247,11 +283,27 @@ classdef BatchGUI < saeeg.GUIComponent
                     src.Checked = ~src.Checked;
                     setpref('saeeg','OverwriteExisting',src.Checked);
                     
+                    obj.MasterObj.OverwriteExisting = isequal(src.Checked,'on');
+                    
                     saeeg.vprintf(1,'OverwriteExisting set to "%s"',src.Checked)
                     
+                    
+                case 'OpenLog'
+                    saeeg.vprintf(1,'Opening current log: "%s"',fopen(GLogFID));
+                    saeeg.vprintf(-1,'OPENLOG');
             end
             figure(ancestor(src,'figure'));
         end
+        
+        
+        
+        
+        
+        function finish_setup(obj)
+            lay = getpref('saeeg','SensorLayout','biosemi64.lay');
+            obj.MasterObj.update_sensor_layout(lay);
+        end
+        
         
         function update_analysis_panel(obj,src,event)
             obj.gui_disable;

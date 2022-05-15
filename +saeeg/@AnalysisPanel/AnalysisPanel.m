@@ -119,7 +119,7 @@ classdef AnalysisPanel < saeeg.GUIComponent
                 case 'Run'
                     newState = "START";
                     
-                case 'Stop'
+                case 'Stop After File'
                     newState = "STOP";
                     
                 case 'Resume'
@@ -128,6 +128,9 @@ classdef AnalysisPanel < saeeg.GUIComponent
                 case 'Setting up'
                     saeeg.vprintf(0,1,'Must first select file(s) and analysis')
                     return
+                    
+                case 'Reset After Error'
+                    newState = "READY";
             end
             
             obj.ParentObj.update_analysis_state(newState);
@@ -160,8 +163,12 @@ classdef AnalysisPanel < saeeg.GUIComponent
                     h.BackgroundColor = '#FFDA65';
                     
                 case {"START","PROCESSING"}
-                    h.Text = 'Stop';
+                    h.Text = 'Stop After File';
+                    h.Tooltip = ["Clicking 'Stop' will cancel analysis after current file is complete"; ...
+                                 "Use 'Ctrl+C' in command window to interrupt analysis"];
                     h.BackgroundColor = '#FF8E76';
+                    saeeg.vprintf(1,1,'Clicking ''Stop'' will cancel analysis after current file is complete')
+                    saeeg.vprintf(1,1,'Use ''Ctrl+C'' in command window to interrupt analysis');
                     
                 case "ERROR"
                     h.Text = 'Reset';
@@ -171,6 +178,7 @@ classdef AnalysisPanel < saeeg.GUIComponent
                     h.Enable = 'on';
                     h.Text = 'Run';
                     h.BackgroundColor = '#A9FFA8';
+                    h.Tooltip = "";
                     
             end
             drawnow

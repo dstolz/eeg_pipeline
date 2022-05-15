@@ -1,6 +1,5 @@
 classdef enAnalysisState < uint8
     enumeration
-        ERROR       (0)
         SETUP       (1)
         READY       (2)
         START       (3)
@@ -10,6 +9,7 @@ classdef enAnalysisState < uint8
         STOP        (7)
         STOPPING    (8)
         FINISHED    (9)
+        ERROR       (255)
     end
     
     methods (Static)

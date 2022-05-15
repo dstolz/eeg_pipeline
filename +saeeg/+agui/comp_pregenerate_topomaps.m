@@ -22,8 +22,8 @@ classdef comp_pregenerate_topomaps < saeeg.agui.AnalysisGUI
             if ~isfolder(pthFig), mkdir(pthFig); end
             
             fn = char(Q.CurrentFilename);
-            ffnOut = fullfile(pthOut,[fn '_CLEANED.mat']);
-            ffnFig = fullfile(pthFig,[fn '_TOPOFIG.fig']);
+            ffnOut = char(fullfile(pthOut,[fn '_CLEANED.mat']));
+            ffnFig = char(fullfile(pthFig,[fn '_TOPOFIG.fig']));
             
             if ~Q.OverwriteExisting && exist(ffnOut,'file')
                 saeeg.vprintf(1,1,'File already exists, skippping: %s\n',ffnOut)

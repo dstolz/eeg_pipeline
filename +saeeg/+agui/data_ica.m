@@ -1,9 +1,6 @@
 classdef data_ica < saeeg.agui.AnalysisGUI
     
     
-    properties
-        
-    end
     
     methods
         function obj = data_ica(MasterObj,parent)
