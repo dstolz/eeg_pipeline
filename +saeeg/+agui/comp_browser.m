@@ -1,7 +1,7 @@
-classdef data_browser < saeeg.agui.AnalysisGUI
+classdef comp_browser < saeeg.agui.AnalysisGUI
     
     methods
-        function obj = data_browser(MasterObj,parent)
+        function obj = comp_browser(MasterObj,parent)
             obj.MasterObj = MasterObj;
             obj.parent = parent;
         end
@@ -12,11 +12,11 @@ classdef data_browser < saeeg.agui.AnalysisGUI
             cfg.blocksize = obj.handles.blocksize.Value;
             cfg.layout = obj.MasterObj.SensorLayout;
             
-            load(Q.CurrentFile,'data');
-            
-            cfg.channel = ft_channelselection({'all','-Status','-*EOG','-EXG*','-A1','-A2'},data.label);
-            
-            ft_databrowser(cfg,data);
+            load(Q.CurrentFile,'comp');
+                        
+            ft_databrowser(cfg,comp);
+            drawnow
+            waitfor(gcf);
             
             Q.mark_completed;
             
@@ -41,7 +41,7 @@ classdef data_browser < saeeg.agui.AnalysisGUI
             h = uieditfield(g,'numeric');
             h.Layout.Column = 2;
             h.Layout.Row = 1;
-            h.Value = getpref('saeeg_agui','data_browser_blocksize',30);
+            h.Value = getpref('saeeg_agui','comp_browser_blocksize',30);
             h.ValueDisplayFormat = '%.1f seconds';
             h.HorizontalAlignment = 'center';
             h.Limits = [0.1 600];
