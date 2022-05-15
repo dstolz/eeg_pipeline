@@ -28,6 +28,14 @@ This toolbox was designed as part of an independent study to facilitate batch pr
 * Select a folder or files individually in the file tree at the left.
 * The dropdown box at the right-top of the gui should populate with analysis functions (really their own classes) that are compatible with the data type of selected files.
 * Use the settings menu at the top of the gui to customize program behavior.
+
+* A typical pipeline might look like:
+  1. biosemi_preprocessing - convert biosemi data to fieldtrip `data` format for further processing
+  2. data_concatenate - concatenate data based on simple file naming rules
+  3. data_ica - compute independant component analysis. Results in `comp` component datatype
+  4. comp_pregenerate_topomaps - 
+  5. comp_remove_marked_artifacts
+  6. data_mTRF
 ![main_gui](https://user-images.githubusercontent.com/11509429/168487431-20aac2a7-7963-499b-b0c3-6de23ed82325.PNG)
 
 
