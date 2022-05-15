@@ -10,7 +10,8 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
         function run_analysis(obj,Q)
             
             
-            ForegroundOrBackground = obj.handles.modelDirection.Value;           
+            fob = obj.handles.fob.Value;
+            modelDirection = obj.handles.modelDirection.Value;           
             modelWindow = str2num(obj.handles.window.Value);
             metricForLamda = obj.handles.lambdaMetric.Value; % maximum Pearson's correlation coefficient
             crossvalLambdas = str2num(obj.handles.crossvalLambdas.Value);
@@ -49,7 +50,7 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             else
                 tc = "";
             end
-            wfn = cEEG(tokEEG.Char) + "_" + ForegroundOrBackground + "_" + tc ...
+            wfn = cEEG(tokEEG.Char) + "_" + fob + "_" + tc ...
                 + "_" + cEEG(tokEEG.F1) + "_" + cEEG(tokEEG.F2) ...
                 + "_Pool_" + cEEG{tokEEG.Pool}(end);
             ind = startsWith(fnWav,wfn,'IgnoreCase',true);
@@ -73,7 +74,7 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             
             M.fnWAV = fnWAVcur;
             
-            saeeg.vprintf(1,'Matched: "%s" with "%s"\n',Q.CurrentFilename,fnWav{ind})
+            saeeg.vprintf(1,'Matched: "%s" with "%s"',Q.CurrentFilename,fnWav{ind})
             
             saeeg.vprintf(1,'Loading "%s" ...',Q.CurrentFilename)
             load(Q.CurrentFile,'data');
@@ -98,14 +99,13 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             [stim,wavFs] = audioread(ffnWav{ind});
             fprintf(' done\n')
             
-            fprintf('Rectifying and resampling stimulus %.1f Hz -> %.1f Hz ...',wavFs,Fs)
+            saeeg.vprintf(1,'Rectifying and resampling stimulus %.1f Hz -> %.1f Hz',wavFs,Fs)
             stim = mTRFenvelope(stim,wavFs,Fs);
-            fprintf(' done\n')
             
             
             adj = length(stim) - length(resp);
             if adj ~= 0
-                fprintf(2,'WARNING: Stimulus ended up being %d samples longer than the trial. Truncating stimulus.\n',adj)
+                saeeg.vprintf(1,1,'WARNING: Stimulus ended up being %d samples longer than the trial. Truncating stimulus.',adj)
                 stim(end-adj+1:end) = [];
             end
             
@@ -132,11 +132,7 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             % Model hyperparameters
             % Run fast cross-validation
             M.crossval = mTRFcrossval(stimtrain,resptrain,Fs,modelDirection,0,modelWindow(2),crossvalLambdas,...
-                'zeropad',0,'fast',1);
-            
-            
-            
-            
+                'zeropad',0,'fast',1);          
             
             
             % Estimate optimal hyperparameters
@@ -182,7 +178,7 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
         function create_gui(obj)
             g = uigridlayout(obj.parent);
             g.ColumnWidth = {'1x','1x'};
-            g.RowHeight = repmat({30},1,6);
+            g.RowHeight = repmat({30},1,8);
             
             
             
@@ -289,7 +285,22 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             h.Value = getpref('saeeg_agui','data_mTRF_pthStimulusDir','L:\Users\dstolz\Stimuli Concatenated (10 minutes)\Saved Concatenated Files');
             obj.handles.pthStimulusDir = h;
             
+
             
+            h = uilabel(g);
+            h.Layout.Column = 1;
+            h.Layout.Row = 7;
+            h.Text = 'Stimulus type:';
+            h.FontSize = 16;
+            h.FontWeight = 'bold';
+            h.HorizontalAlignment = 'right';
+            
+            h = uidropdown(g);
+            h.Layout.Column = 2;
+            h.Layout.Row = 7;
+            h.Items = {'Foreground','Background'};
+            h.Value = getpref('saeeg_agui','data_mTRF_fob','Foreground');
+            obj.handles.fob = h;
         end
         
         
