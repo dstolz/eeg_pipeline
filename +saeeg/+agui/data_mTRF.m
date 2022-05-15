@@ -136,18 +136,18 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             
             
             % Estimate optimal hyperparameters
-            M.crossval.Ravg = mean(M.crossval.r,1);
-            [M.crossvalRavgVal,M.crossvalRavgIdx] = max(M.crossval.Ravg,[],2);
+            M.crossval.Ravg = squeeze(mean(M.crossval.r,1));
+            [M.crossvalRavgVal,M.crossvalRavgIdx] = max(mean(M.crossval.Ravg,2));
             
-            M.crossval.MSEavg = mean(M.crossval.err,1);
-            [M.crossvalMSEavgVal,M.crossvalMSEavgIdx] = min(mean(M.crossval.err,1),[],2);
+            M.crossval.ERRavg = squeeze(mean(M.crossval.err,1));
+            [M.crossvalERRavgVal,M.crossvalERRavgIdx] = min(mean(M.crossval.ERRavg,2));
             
             
             switch lower(metricForLamda)
-                case "r"
-                    M.predictLambda = crossvalLambdas(M.crossvalRavgIdx);
-                case "mse"
-                    M.predictLambda = crossvalLambdas(M.crossvalMSEavgIdx);
+                case 'r'
+                    M.predictLambda = crossvalLambdas(squeeze(M.crossvalRavgIdx));
+                case 'err'
+                    M.predictLambda = crossvalLambdas(M.crossvalERRavgIdx);
             end
             
             
@@ -165,7 +165,16 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             % Predict
             [M.predict,M.predictStats] = mTRFpredict(stimtest,resptest,M.train,'zeropad',0);
             
+            if modelDirection > 0
+                mdstr = 'Forward';
+            else
+                mdstr = 'Backward';
+            end
+            ffnOut = fullfile(obj.MasterObj.OutputPath,join({'mTRF',mdstr},'-'),Q.CurrentFilename + "_TRF.mat");
+            saeeg.vprintf(1,'Writing model: "%s"',ffnOut)
             
+            model = M;
+            save(ffnOut,'model');
             
             
             Q.mark_completed;
