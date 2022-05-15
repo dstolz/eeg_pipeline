@@ -160,69 +160,82 @@ classdef FileTree < saeeg.GUIComponent
             delete(obj.hDirNode);
                         
             saeeg.vprintf(1,'Searching for files under DataRoot: "%s"',fullfile(M.DataRoot,M.FilePattern));
-            d = dir(M.DataRoot);
-            d(startsWith({d.name},'.')|startsWith({d.name},'+')) = [];
-            df = cellfun(@fullfile,{d.folder},{d.name},'uni',0);
+            d = dir(fullfile(M.DataRoot,M.FilePattern));            
+            d([d.isdir]) = [];
+            dFilenames = {d.name};
+            dFolders = {d.folder};
+            dFiles = cellfun(@fullfile,dFolders,dFilenames,'uni',0);
+                        
+            udFolders = unique(dFolders);
+            subFolders = cellfun(@(a) a(length(char(M.DataRoot))+1:end),udFolders,'uni',0);
             
-            a = cellfun(@(a) dir(fullfile(a,M.FilePattern)),df,'uni',0);
+            obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(udFolders),length(d)); drawnow
 
-            obj.hHeaderBox.Text = sprintf('%d directories with a total of %d files found',length(d),sum(cellfun(@numel,a))); drawnow
+            
             [~,DirM] = ipticondir;
             iconFolder = fullfile(DirM,'foldericon.gif');
             iconFile = fullfile(DirM,'file_new.png');
             
-            s = sum(cellfun(@(a) sum([a.isdir]),a));
-            obj.hDirNode = gobjects(s,1);
-            s = sum(cellfun(@(a) sum(~[a.isdir]),a));
-            obj.hFileNode = gobjects(s,1);
-            
-            kDir = 1;
-            kFile = 1;
-            for i = 1:length(a)
-                fn = {a{i}.name};
-                ind = startsWith(fn,'.')|startsWith(fn,'+'); % ignore directories with '.' or '+' prefix
-                a{i}(ind) = [];
-                fn(ind) = [];
+            obj.hDirNode = gobjects(0);
+            for i = 1:length(subFolders)
+                ind = endsWith(dFolders,subFolders{i});
+                s = split(subFolders{i},filesep);
+                s(cellfun(@isempty,s)) = [];
                 
-                if isempty(fn), continue; end
-                
-                ffn = cellfun(@fullfile,{a{i}.folder},fn,'uni',0);
-                
-                
-                saeeg.vprintf(3,'Adding %d items to filetree',length(ffn))
-                
-                aisdir = [a{i}.isdir];
-                
-                saeeg.vprintf(4,'FileTree: Adding main dir: "%s"',df{i})
-                h = uitreenode(obj.hFileTree,'Text',d(i).name, ...
-                    'NodeData',df{i}, ...
-                    'UserData',ffn(~aisdir), ...
-                    'Icon',iconFolder);
-                obj.hDirNode(kDir) = h;
-                kDir = kDir + 1;
-                
-
-                for j = 1:length(ffn)
-                    if aisdir(j)
-                        saeeg.vprintf(4,'FileTree: Adding dir: "%s"',ffn{j})
-                        ind = startsWith(ffn,ffn(j)) & ~aisdir;
-                        obj.hDirNode(kDir) = uitreenode(h, ...
-                            'Text',fn{j}, ...
-                            'NodeData',ffn{j}, ...
-                            'UserData',ffn(ind), ...
-                            'Icon',iconFolder);
-                        kDir = kDir + 1;
-                    else
-                        nd = get(obj.hDirNode(1:kDir-1),'NodeData');
-                        ind = ismember(nd,{a{i}(j).folder});
-                        saeeg.vprintf(4,'FileTree: Adding file: "%s" under: "%s"',ffn{j},obj.hDirNode(ind).NodeData)
-                        obj.hFileNode(kFile) = uitreenode(obj.hDirNode(ind), ...
-                            'Text',fn{j},'NodeData',ffn{j}, ...
-                            'Icon',iconFile);
-                        kFile = kFile + 1;
+                for j = 1:length(s)
+                    fpth = fullfile(M.DataRoot,s{1:j});
+                    nd = get(obj.hDirNode,'NodeData');
+                    nidx = [];
+                    if ~isempty(nd)
+                        nd = cellstr(nd);
+                        nind = ismember(nd,char(fpth));
+                        nidx = find(nind);
                     end
+                    
+                    if j == 1 && isempty(nidx)
+                        h = obj.hFileTree;
+                        
+                    elseif isempty(nidx)
+                        nidx = find(startsWith(nd,fileparts(fpth)));
+                        [~,m] = min(cellfun(@numel,nd(nidx)));
+                        nidx = nidx(m);
+                        h = obj.hDirNode(nidx);
+                    else
+                        continue
+                    end
+                    
+                	obj.hDirNode(end+1) = uitreenode(h, ...
+                        'Text',s{j}, ...
+                        'NodeData',fpth, ...
+                        'UserData',dFiles(ind), ...
+                        'Icon',iconFolder);
                 end
             end
+            
+            nd = cellstr(get(obj.hDirNode,'NodeData'));
+            
+            for i = 1:length(nd)
+                ind = ismember(dFolders,nd{i});
+                if ~any(ind), continue; end
+                
+                x = dFilenames(ind);
+                y = dFiles(ind);
+                
+                h = obj.hDirNode(i);
+                
+                for j = 1:length(x)
+                    saeeg.vprintf(4,'FileTree: Adding file: "%s" under: "%s"',x{j},h.NodeData)
+
+                    obj.hFileNode(end+1) = uitreenode(h, ...
+                        'Text',x{j}, ...
+                        'NodeData',y{j}, ...
+                        'Icon',iconFile);
+                end
+            end
+            
+            
+            
+            
             
             obj.hFileTree.Enable = 'on';
             ha.Pointer = hap; drawnow
