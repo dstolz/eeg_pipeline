@@ -156,8 +156,9 @@ classdef FileTree < saeeg.GUIComponent
             hap = ha.Pointer; % original pointer
             ha.Pointer = 'watch'; drawnow
             
-            delete(obj.hFileNode);
-            delete(obj.hDirNode);
+            try
+                delete(obj.hFileTree.Children);
+            end
                         
             saeeg.vprintf(1,'Searching for files under DataRoot: "%s"',fullfile(M.DataRoot,M.FilePattern));
             d = dir(fullfile(M.DataRoot,M.FilePattern));            
