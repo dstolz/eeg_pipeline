@@ -2,10 +2,17 @@ function gui_clean_components(hObj,event,showall)
 
 if nargin < 3 || isempty(showall), showall = false; end
 
-if nargin >= 2 && ischar(hObj) && ischar(event) % path names
+
+
+if nargin >= 2 && ischar(hObj) && ischar(event) && isfolder(hObj)% path names
     figPath = hObj;
     cleanPath = event;
     listfiles(figPath,cleanPath,showall)
+    return
+end
+
+if ischar(hObj) && isfile(hObj)
+    hObj = openfig(hObj);
     return
 end
     
@@ -54,7 +61,7 @@ switch r
         
 end
 
-listfiles(figPath,cleanPath,showall)
+% listfiles(figPath,cleanPath,showall)
 
 
 function listfiles(figPath,cleanPath,showall)

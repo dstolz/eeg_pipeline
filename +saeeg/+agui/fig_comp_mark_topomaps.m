@@ -14,14 +14,29 @@ classdef fig_comp_mark_topomaps < saeeg.agui.AnalysisGUI
         function run_analysis(obj,Q)
             
 %             showAll = obj.handles.showAll.Value; % if false, show only unprocessed data
+
+
+            outPathRoot = obj.MasterObj.OutputPath;
+
+            cleanPath = fullfile(outPathRoot,'CLEANED');
+
+            fnOut = char(Q.CurrentFilename);
+            fnOut = fnOut(1:find(fnOut=='_',1,'last')-1);
+            ffnOut = fullfile(cleanPath,fnOut + "_CLEANED.mat");
             
+            if ~Q.OverwriteExisting && exist(ffnOut,'file')
+                saeeg.vprintf(1,1,'File already exists, skippping: %s\n',ffnOut)
+            else
+                if ~isfolder(cleanPath), mkdir(cleanPath); end
+
+                gui_clean_components(Q.CurrentFile);
+
+                waitfor(gcf);
+            end
             
-            topoFigPath = fullfile(outPathRoot,'TOPOFIG');
-            cleanPath  = fullfile(outPathRoot,'CLEANED');
+            Q.mark_completed;
             
-            gui_clean_components(topoFigPath,cleanPath)
-            
-%             Q.start_next;
+            Q.start_next;
         end
         
         
