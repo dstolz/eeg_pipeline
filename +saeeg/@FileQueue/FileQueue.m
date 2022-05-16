@@ -202,7 +202,7 @@ classdef FileQueue < handle
         end
         
         function p = get.CurrentFilepath(obj)
-            [p,~] = obj.Queue(obj.CurrentIndex);
+            [p,~] = fileparts(obj.Queue(obj.CurrentIndex));
         end
         
         function idx = get.CurrentIndex(obj)
