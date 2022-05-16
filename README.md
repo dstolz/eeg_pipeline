@@ -33,9 +33,10 @@ This toolbox was designed as part of an independent study to facilitate batch pr
   1. biosemi_preprocessing - convert biosemi data to fieldtrip `data` format for further processing
   2. data_concatenate - concatenate data based on simple file naming rules
   3. data_ica - compute independant component analysis. Results in `comp` component datatype
-  4. comp_pregenerate_topomaps - 
-  5. comp_remove_marked_artifacts
-  6. data_mTRF
+  4. comp_pregenerate_topomaps - pregenerate ica topographic maps and gui for speedy artifact selection and rejection
+  5. fig_comp_mark_topomaps - runs the gui to select and reject ica artifacts
+  6. data_mTRF - run forward or backward mTRF analysis (uses mTRF-Toolbox, see reference above)
+  
 ![main_gui](https://user-images.githubusercontent.com/11509429/168487431-20aac2a7-7963-499b-b0c3-6de23ed82325.PNG)
 
 
