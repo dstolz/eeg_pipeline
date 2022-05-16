@@ -23,7 +23,7 @@ This toolbox was designed as part of an independent study to facilitate batch pr
 * The File Pattern fieldcan be used to restrict which files are found under the Data Source directory.
   * Recursively find all files: `**/*`
   * Recursively find 'bdf' files only: `**/*.bdf`
-  * Recursively find all files that contain the string "PoolB": `**/*PoolB*
+  * Recursively find all files that contain the string "PoolB": `**/*PoolB*`
   * Use more complex regular expressions to further restrict files.
 * Select a folder or files individually in the file tree at the left.
 * The dropdown box at the right-top of the gui should populate with analysis functions (really their own classes) that are compatible with the data type of selected files.
