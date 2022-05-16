@@ -10,6 +10,8 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
         function run_analysis(obj,Q)
             
             
+            
+            
             fob = obj.handles.fob.Value;
             modelDirection = obj.handles.modelDirection.Value;           
             modelWindow = str2num(obj.handles.window.Value);
@@ -21,6 +23,27 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             predictTestFold = round(crossvalNFold/2);
             
                         
+
+            if modelDirection > 0
+                mdlstr = 'Forward';
+            else
+                mdlstr = 'Backward';
+            end
+            
+            
+            pthOut = fullfile(obj.MasterObj.OutputPath,['mTRF_' mdlstr]);
+            
+            if ~isfolder(pthOut), mkdir(pthOut); end
+            
+            ffnOut = fullfile(pthOut,Q.CurrentFilename + "_TRF.mat");
+
+            
+            if ~Q.OverwriteExisting && exist(ffnOut,'file')
+                saeeg.vprintf(1,1,'File already exists, skippping: %s\n',fnOut)
+                Q.mark_completed;
+                Q.start_next;
+                return
+            end
             
             d = dir(fullfile(pthStimulusDir,'**\*.wav'));
             fnWav = {d.name}';
@@ -165,14 +188,7 @@ classdef data_mTRF < saeeg.agui.AnalysisGUI
             % Predict
             [M.predict,M.predictStats] = mTRFpredict(stimtest,resptest,M.train,'zeropad',0);
             
-            if modelDirection > 0
-                mdstr = 'Forward';
-            else
-                mdstr = 'Backward';
-            end
-            ffnOut = fullfile(obj.MasterObj.OutputPath,join({'mTRF',mdstr},'-'),Q.CurrentFilename + "_TRF.mat");
             saeeg.vprintf(1,'Writing model: "%s"',ffnOut)
-            
             model = M;
             save(ffnOut,'model');
             
