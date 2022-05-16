@@ -224,7 +224,7 @@ classdef (Hidden) MasterObj < handle
                     
                 case '.mat'
                     w = who('-file',ffn);
-                    dataTypes = ["data","comp","freq"];
+                    dataTypes = ["data","comp","freq","model"];
                     ind = ismember(dataTypes,w);
                     type = dataTypes(ind);
                     
